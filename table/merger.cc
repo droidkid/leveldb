@@ -18,7 +18,8 @@ class MergingIterator : public Iterator {
         children_(new IteratorWrapper[n]),
         n_(n),
         current_(nullptr),
-        direction_(kForward) {
+        direction_(kForward),
+        oracle_savings_(0) {
     for (int i = 0; i < n; i++) {
       children_[i].Set(children[i]);
     }
@@ -126,6 +127,11 @@ class MergingIterator : public Iterator {
       }
     }
     return status;
+
+  }
+
+  int64_t get_oracle_savings() override {
+    return oracle_savings_;
   }
 
  private:
@@ -143,6 +149,7 @@ class MergingIterator : public Iterator {
   int n_;
   IteratorWrapper* current_;
   Direction direction_;
+  int64_t oracle_savings_;
 };
 
 void MergingIterator::FindSmallest() {
@@ -156,6 +163,10 @@ void MergingIterator::FindSmallest() {
         smallest = child;
       }
     }
+  }
+  if (current_ == smallest) {
+    // These are n comparisions that we could have skipped!
+    oracle_savings_ += n_;
   }
   current_ = smallest;
 }

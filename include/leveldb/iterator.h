@@ -80,6 +80,8 @@ class LEVELDB_EXPORT Iterator {
   using CleanupFunction = void (*)(void* arg1, void* arg2);
   void RegisterCleanup(CleanupFunction function, void* arg1, void* arg2);
 
+  virtual int64_t get_oracle_savings() { return 0; }
+
  private:
   // Cleanup functions are stored in a single-linked list.
   // The list's head node is inlined in the iterator.

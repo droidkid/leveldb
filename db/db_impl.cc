@@ -1022,6 +1022,7 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
   if (status.ok()) {
     status = input->status();
   }
+  int64_t oracle_savings = input->get_oracle_savings();
   delete input;
   input = nullptr;
 
@@ -1035,6 +1036,7 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
   for (size_t i = 0; i < compact->outputs.size(); i++) {
     stats.bytes_written += compact->outputs[i].file_size;
   }
+  stats.oracle_savings = oracle_savings;
 
   mutex_.Lock();
   stats_[compact->compaction->level() + 1].Add(stats);
@@ -1410,17 +1412,19 @@ bool DBImpl::GetProperty(const Slice& property, std::string* value) {
     char buf[200];
     std::snprintf(buf, sizeof(buf),
                   "                               Compactions\n"
-                  "Level  Files Size(MB) Time(sec) Read(MB) Write(MB)\n"
-                  "--------------------------------------------------\n");
+                  "Level  Files Size(MB) Time(sec) Read(MB) Write(MB) OracleSavings\n"
+                  "-----------------------------------------------------------------\n");
     value->append(buf);
     for (int level = 0; level < config::kNumLevels; level++) {
       int files = versions_->NumLevelFiles(level);
       if (stats_[level].micros > 0 || files > 0) {
-        std::snprintf(buf, sizeof(buf), "%3d %8d %8.0f %9.0f %8.0f %9.0f\n",
+        std::snprintf(buf, sizeof(buf), "%3d %8d %8.0f %9.0f %8.0f %9.0f %ld\n",
                       level, files, versions_->NumLevelBytes(level) / 1048576.0,
                       stats_[level].micros / 1e6,
                       stats_[level].bytes_read / 1048576.0,
-                      stats_[level].bytes_written / 1048576.0);
+                      stats_[level].bytes_written / 1048576.0,
+                      stats_[level].oracle_savings
+                      );
         value->append(buf);
       }
     }

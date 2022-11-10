@@ -5,9 +5,9 @@
 
 using namespace std;
 
-#define NUM_KEYS 1000000
+#define NUM_KEYS 5000000
 const std::string DB_NAME = "./DB";
-const std::string VALUE = "value::value::value";
+const std::string VALUE = "value::value::value::dljiosdjfskldjfsdlkjfsdlkjfsdlkfjsd";
 
 int main() {
     // Destroy the DB and create it again. 
@@ -27,10 +27,14 @@ int main() {
         string *key = new string(to_string(i));
         string *value = new string(VALUE);
         db->Put(leveldb::WriteOptions(), *key, *value);
-        // cout<<"Put: "<<key<<endl;
         delete key;
         delete value;
     }
+
+    std::cout<<"DB Stats"<<std::endl;
+    std::string stats;
+    std::cout<<db->GetProperty("leveldb.stats", &stats);
+    std::cout<<stats<<std::endl;
 
     for (int i=0; i < NUM_KEYS; i++) {
         string key(to_string(i));
@@ -40,6 +44,5 @@ int main() {
     }
 
     cout<<"Ok!"<<endl;
-
 }
 
