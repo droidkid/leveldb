@@ -30,8 +30,6 @@ class MergingIterator : public Iterator {
   bool Valid() const override { return (current_ != nullptr); }
 
   void SeekToFirst() override {
-    //assert(false);
-    is_first = true;
     std::cout<<"Seek to first called "<<(++seek_cnt_)<< "time(s)"<<std::endl;
     for (int i = 0; i < n_; i++) {
       children_[i].SeekToFirst();
@@ -81,25 +79,13 @@ class MergingIterator : public Iterator {
       }
       direction_ = kForward;
     }
-
-    assert(current_->Valid());
     Slice before_key = current_->key();
-
     current_->Next();
     FindSmallest();
 
-    assert(Valid());
-    assert(current_->Valid());
-
     if (Valid()) {
-      //std::cout<<comparator_->Compare(current_->key(), before_key)<<std::endl;
-      if (comparator_->Compare(current_->key(), before_key) < 0) {
-        std::cout<<current_->key().ToString()<<" "<<before_key.ToString()<<std::endl;
-      }
-      if (!is_first)
       assert(comparator_->Compare(current_->key(), before_key) >= 0);
     }
-    is_first = false;
   }
 
   void Prev() override {
