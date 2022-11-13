@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+#include <iostream>
 #include "table/merger.h"
 
 #include "leveldb/comparator.h"
@@ -18,7 +19,7 @@ class MergingIterator : public Iterator {
         children_(new IteratorWrapper[n]),
         n_(n),
         current_(nullptr),
-        direction_(kForward) {
+        direction_(kForward), is_first(true), seek_cnt_(0) {
     for (int i = 0; i < n; i++) {
       children_[i].Set(children[i]);
     }
@@ -29,6 +30,9 @@ class MergingIterator : public Iterator {
   bool Valid() const override { return (current_ != nullptr); }
 
   void SeekToFirst() override {
+    //assert(false);
+    is_first = true;
+    std::cout<<"Seek to first called "<<(++seek_cnt_)<< "time(s)"<<std::endl;
     for (int i = 0; i < n_; i++) {
       children_[i].SeekToFirst();
     }
@@ -37,6 +41,7 @@ class MergingIterator : public Iterator {
   }
 
   void SeekToLast() override {
+    assert(false);
     for (int i = 0; i < n_; i++) {
       children_[i].SeekToLast();
     }
@@ -45,6 +50,7 @@ class MergingIterator : public Iterator {
   }
 
   void Seek(const Slice& target) override {
+    assert(false);
     for (int i = 0; i < n_; i++) {
       children_[i].Seek(target);
     }
@@ -54,6 +60,7 @@ class MergingIterator : public Iterator {
 
   void Next() override {
     assert(Valid());
+    
 
     // Ensure that all children are positioned after key().
     // If we are moving in the forward direction, it is already
@@ -61,6 +68,7 @@ class MergingIterator : public Iterator {
     // the smallest child and key() == current_->key().  Otherwise,
     // we explicitly position the non-current_ children.
     if (direction_ != kForward) {
+      assert(false);
       for (int i = 0; i < n_; i++) {
         IteratorWrapper* child = &children_[i];
         if (child != current_) {
@@ -74,11 +82,28 @@ class MergingIterator : public Iterator {
       direction_ = kForward;
     }
 
+    assert(current_->Valid());
+    Slice before_key = current_->key();
+
     current_->Next();
     FindSmallest();
+
+    assert(Valid());
+    assert(current_->Valid());
+
+    if (Valid()) {
+      //std::cout<<comparator_->Compare(current_->key(), before_key)<<std::endl;
+      if (comparator_->Compare(current_->key(), before_key) < 0) {
+        std::cout<<current_->key().ToString()<<" "<<before_key.ToString()<<std::endl;
+      }
+      if (!is_first)
+      assert(comparator_->Compare(current_->key(), before_key) >= 0);
+    }
+    is_first = false;
   }
 
   void Prev() override {
+    assert(false);
     assert(Valid());
 
     // Ensure that all children are positioned before key().
@@ -143,6 +168,9 @@ class MergingIterator : public Iterator {
   int n_;
   IteratorWrapper* current_;
   Direction direction_;
+  bool is_first;
+  Slice last_returned;
+  int seek_cnt_;
 };
 
 void MergingIterator::FindSmallest() {
@@ -161,6 +189,7 @@ void MergingIterator::FindSmallest() {
 }
 
 void MergingIterator::FindLargest() {
+  assert(false);
   IteratorWrapper* largest = nullptr;
   for (int i = n_ - 1; i >= 0; i--) {
     IteratorWrapper* child = &children_[i];
