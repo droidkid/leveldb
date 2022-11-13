@@ -79,7 +79,8 @@ class MergingIterator : public Iterator {
       }
       direction_ = kForward;
     }
-    Slice before_key = current_->key();
+    // std::string s(current_->key().ToString());
+    Slice before_key = Slice(current_->key().ToString());
     current_->Next();
     FindSmallest();
 
