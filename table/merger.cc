@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+#include <iostream>
 #include "table/merger.h"
 
 #include "leveldb/comparator.h"
@@ -19,7 +20,10 @@ class MergingIterator : public Iterator {
         n_(n),
         current_(nullptr),
         direction_(kForward),
-        oracle_savings_(0) {
+        oracle_savings_(0),
+        is_last_segment_(false),
+        first_element_(true)
+         {
     for (int i = 0; i < n; i++) {
       children_[i].Set(children[i]);
     }
@@ -75,8 +79,17 @@ class MergingIterator : public Iterator {
       direction_ = kForward;
     }
 
+    // std::cout<<"Next now points to: "<<current_->key().ToString()<<std::endl;
     current_->Next(); // Consume the element.
+
     FindSmallest(); // Set current to next smallest iterator.
+    
+    if (!first_element_) {
+      assert(comparator_->Compare(current_->key(), last_key_returned_) >= 0);
+    }
+    last_key_returned_ = current_->key();
+    first_element_ = false;
+    
   }
 
   void Prev() override {
@@ -150,36 +163,78 @@ class MergingIterator : public Iterator {
   IteratorWrapper* current_;
   Direction direction_;
   int64_t oracle_savings_;
+  // Add some state variables
+  Slice limit_; 
+  bool is_last_segment_;
+  bool first_element_;
+  Slice last_key_returned_;
 };
 
 void MergingIterator::FindSmallest() {
   IteratorWrapper* smallest = nullptr;
   IteratorWrapper* second_smallest = nullptr;
+  bool has_second_smallest = false;
 
   // TODO: If current is still smallest, just return current.
+  if (current_ != nullptr && 
+      (current_->Valid()) &&
+      (is_last_segment_ || comparator_->Compare(current_->key(), limit_) < 0)) {
+    return;
+  }
+  // We're done with our range, now we want to find the next distinct range.
+  is_last_segment_ = false; // We don't know yet if we're in the last_segment_
 
   for (int i = 0; i < n_; i++) {
     IteratorWrapper* child = &children_[i];
     if (child->Valid()) {
       if (smallest == nullptr) {
         smallest = child;
-        second_smallest = child;
+        second_smallest = child; // It should be end of smallest, not child.
       } else if (comparator_->Compare(child->key(), smallest->key()) < 0) {
         second_smallest = smallest;
         smallest = child;
+        has_second_smallest = true;
       } else if (comparator_->Compare(child->key(), second_smallest->key()) < 0) {
         second_smallest = child;
+        has_second_smallest = true;
       }
     }
   }
+
+  /* TODO: Remove the stat in Compaction Stats
   if (current_ == smallest) {
     // These are n comparisions that we could have skipped!
     oracle_savings_ += (n_-1);
   }
+  */
   current_ = smallest;
 
   // TODO: Find second_smallest()->key position in smallest using MLModel.Guess
   // This is our range for which current is smallest.
+  // Option 1 -> assume guess is always correct
+   // limit = current_->guess(second_smallest->key());
+  
+  Slice start = smallest->key();
+  if (!has_second_smallest) {
+    is_last_segment_ = true;
+    return;
+  }
+
+  smallest->Seek(second_smallest->key());
+  if (smallest->Valid()) {
+    limit_ = smallest->key(); // If this is not valid?
+  } else {
+    // What?
+    is_last_segment_ = true;
+  }
+
+  // Now reset smallest.
+  smallest->Seek(start);
+  smallest->Prev(); // Now it should be equal to start
+  while (comparator_->Compare(smallest->key(), start) == 0) {
+      smallest->Prev();
+  }
+  smallest->Next();
 }
 
 void MergingIterator::FindLargest() {
