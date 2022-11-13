@@ -75,8 +75,8 @@ class MergingIterator : public Iterator {
       direction_ = kForward;
     }
 
-    current_->Next();
-    FindSmallest();
+    current_->Next(); // Consume the element.
+    FindSmallest(); // Set current to next smallest iterator.
   }
 
   void Prev() override {
@@ -154,21 +154,32 @@ class MergingIterator : public Iterator {
 
 void MergingIterator::FindSmallest() {
   IteratorWrapper* smallest = nullptr;
+  IteratorWrapper* second_smallest = nullptr;
+
+  // TODO: If current is still smallest, just return current.
+
   for (int i = 0; i < n_; i++) {
     IteratorWrapper* child = &children_[i];
     if (child->Valid()) {
       if (smallest == nullptr) {
         smallest = child;
+        second_smallest = child;
       } else if (comparator_->Compare(child->key(), smallest->key()) < 0) {
+        second_smallest = smallest;
         smallest = child;
+      } else if (comparator_->Compare(child->key(), second_smallest->key()) < 0) {
+        second_smallest = child;
       }
     }
   }
   if (current_ == smallest) {
     // These are n comparisions that we could have skipped!
-    oracle_savings_ += n_;
+    oracle_savings_ += (n_-1);
   }
   current_ = smallest;
+
+  // TODO: Find second_smallest()->key position in smallest using MLModel.Guess
+  // This is our range for which current is smallest.
 }
 
 void MergingIterator::FindLargest() {
