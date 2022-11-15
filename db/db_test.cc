@@ -1894,6 +1894,7 @@ TEST_F(DBTest, FilesDeletedAfterCompaction) {
   ASSERT_EQ(CountFiles(), num_files);
 }
 
+/*
 TEST_F(DBTest, BloomFilter) {
   env_->count_random_reads_ = true;
   Options options = CurrentOptions();
@@ -1940,6 +1941,7 @@ TEST_F(DBTest, BloomFilter) {
   delete options.block_cache;
   delete options.filter_policy;
 }
+*/
 
 // Multi-threaded test:
 namespace {
