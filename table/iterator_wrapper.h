@@ -74,8 +74,11 @@ class IteratorWrapper {
     Update();
   }
 
-  bool guess(std::string key_to_find, const Comparator &comparator, std::string &limit) { 
-    return iter_->guess(key_to_find, comparator, limit);
+  bool GuessStrictlyGreaterKey(const Slice& guess_key, const Comparator &comparator, std::string &limit) { 
+    assert(iter_);
+    bool ret = iter_->GuessStrictlyGreaterKey(guess_key, comparator, limit);
+    Update();
+    return ret;
   }
 
 

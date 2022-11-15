@@ -83,11 +83,10 @@ class LEVELDB_EXPORT Iterator {
 
   virtual int64_t get_oracle_savings() { return 0; }
 
-  virtual bool guess(std::string key_to_find, const Comparator &comparator, std::string &limit) { 
-      std::string start = "";
-      start += (this->key().ToString());
-      this->Seek(Slice(key_to_find));
-      while (this->Valid() && comparator.Compare(this->key(), Slice(key_to_find)) == 0) {
+  virtual bool GuessStrictlyGreaterKey(const Slice& guess_key, const Comparator &comparator, std::string &limit) { 
+      std::string start_key(this->key().ToString());
+      this->Seek(guess_key);
+      while (this->Valid() && comparator.Compare(this->key(), Slice(guess_key)) == 0) {
           this->Next();
       }
 
@@ -95,17 +94,14 @@ class LEVELDB_EXPORT Iterator {
         // TODO: Deal with GC later.
         limit.clear();
         limit.append(this->key().ToString());
-        assert(comparator.Compare(this->key(), Slice(key_to_find)) > 0);
-        this->Seek(start);
-        assert(comparator.Compare(this->key(), Slice(start)) == 0);
+        this->Seek(Slice(start_key));
         return true;
       }
       else {
-        this->Seek(start);
-        assert(comparator.Compare(this->key(), Slice(start)) == 0);
+        this->Seek(Slice(start_key));
+        assert(comparator.Compare(this->key(), Slice(start_key)) == 0);
         return false;
       }
-
   }
 
  private:

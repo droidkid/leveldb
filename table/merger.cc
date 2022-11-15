@@ -174,8 +174,9 @@ void MergingIterator::FindSmallest() {
       (current_->Valid()) &&
       (is_last_segment_ || comparator_->Compare(current_->key(), Slice(limit_)) < 0)) {
         oracle_savings_ += (n_-1);
-    return;
+        return;
   }
+
   // We're done with our range, now we want to find the next distinct range.
   is_last_segment_ = false; // We don't know yet if we're in the last_segment_
 
@@ -193,12 +194,6 @@ void MergingIterator::FindSmallest() {
     }
   }
 
-  /* TODO: Remove the stat in Compaction Stats
-  if (current_ == smallest) {
-    // These are n comparisions that we could have skipped!
-    oracle_savings_ += (n_-1);
-  }
-  */
   current_ = smallest;
   if(smallest == nullptr){
       return; //no more ranges - not valid
@@ -213,9 +208,8 @@ void MergingIterator::FindSmallest() {
     is_last_segment_ = true;
     return;
   }
-  std::string second_smallest_key = second_smallest->key().ToString();
-  bool found_range_limit = smallest->guess(second_smallest_key, *comparator_, limit_);
-  is_last_segment_ = !found_range_limit;
+  bool hasStrictlyGreaterKey = smallest->GuessStrictlyGreaterKey(second_smallest->key(), *comparator_, limit_);
+  is_last_segment_ = !hasStrictlyGreaterKey;
 }
 
 void MergingIterator::FindLargest() {
