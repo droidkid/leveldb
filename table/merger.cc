@@ -30,7 +30,6 @@ class MergingIterator : public Iterator {
   bool Valid() const override { return (current_ != nullptr); }
 
   void SeekToFirst() override {
-    std::cout<<"Seek to first called "<<(++seek_cnt_)<< "time(s)"<<std::endl;
     for (int i = 0; i < n_; i++) {
       children_[i].SeekToFirst();
     }
@@ -79,8 +78,8 @@ class MergingIterator : public Iterator {
       }
       direction_ = kForward;
     }
-    // std::string s(current_->key().ToString());
-    Slice before_key = Slice(current_->key().ToString());
+    std::string s(current_->key().ToString());
+    Slice before_key = Slice(s);
     current_->Next();
     FindSmallest();
 

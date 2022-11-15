@@ -5,7 +5,7 @@
 
 using namespace std;
 
-#define NUM_KEYS 50000000
+#define NUM_KEYS 500000
 const std::string DB_NAME = "./DB";
 const std::string VALUE = "value::value::value::dljiosdjfskldjfsdlkjfsdlkjfsdlkfjsd";
 
