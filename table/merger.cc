@@ -173,6 +173,7 @@ void MergingIterator::FindSmallest() {
   if (current_ != nullptr && 
       (current_->Valid()) &&
       (is_last_segment_ || comparator_->Compare(current_->key(), Slice(limit_)) < 0)) {
+        oracle_savings_ += (n_-1);
     return;
   }
   // We're done with our range, now we want to find the next distinct range.
