@@ -18,6 +18,7 @@
 #include "leveldb/export.h"
 #include "leveldb/slice.h"
 #include "leveldb/status.h"
+#include "leveldb/comparator.h"
 
 namespace leveldb {
 
@@ -81,6 +82,31 @@ class LEVELDB_EXPORT Iterator {
   void RegisterCleanup(CleanupFunction function, void* arg1, void* arg2);
 
   virtual int64_t get_oracle_savings() { return 0; }
+
+  virtual bool guess(std::string key_to_find, const Comparator &comparator, std::string &limit) { 
+      std::string start = "";
+      start += (this->key().ToString());
+      this->Seek(Slice(key_to_find));
+      while (this->Valid() && comparator.Compare(this->key(), Slice(key_to_find)) == 0) {
+          this->Next();
+      }
+
+      if (this->Valid()) {
+        // TODO: Deal with GC later.
+        limit.clear();
+        limit.append(this->key().ToString());
+        assert(comparator.Compare(this->key(), Slice(key_to_find)) > 0);
+        this->Seek(start);
+        assert(comparator.Compare(this->key(), Slice(start)) == 0);
+        return true;
+      }
+      else {
+        this->Seek(start);
+        assert(comparator.Compare(this->key(), Slice(start)) == 0);
+        return false;
+      }
+
+  }
 
  private:
   // Cleanup functions are stored in a single-linked list.

@@ -212,24 +212,9 @@ void MergingIterator::FindSmallest() {
     is_last_segment_ = true;
     return;
   }
-
-  std::string start = smallest->key().ToString();
   std::string second_smallest_key = second_smallest->key().ToString();
-  smallest->Seek(second_smallest->key());
-  while (smallest->Valid() && comparator_->Compare(smallest->key(), Slice(second_smallest_key)) == 0) {
-      smallest->Next();
-  }
-
-  if (smallest->Valid()) {
-    limit_ = std::string(smallest->key().ToString());
-    assert(comparator_->Compare(smallest->key(), Slice(second_smallest_key)) > 0);
-  }
-  else {
-    is_last_segment_ = true;
-  }
-
-  smallest->Seek(start);
-  assert(comparator_->Compare(smallest->key(), Slice(start)) == 0);
+  bool found_range_limit = smallest->guess(second_smallest_key, *comparator_, limit_);
+  is_last_segment_ = !found_range_limit;
 }
 
 void MergingIterator::FindLargest() {

@@ -74,6 +74,11 @@ class IteratorWrapper {
     Update();
   }
 
+  bool guess(std::string key_to_find, const Comparator &comparator, std::string &limit) { 
+    return iter_->guess(key_to_find, comparator, limit);
+  }
+
+
  private:
   void Update() {
     valid_ = iter_->Valid();
