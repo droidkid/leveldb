@@ -171,9 +171,10 @@ void MergingIterator::FindSmallest() {
 
   // TODO: If current is still smallest, just return current.
   if (current_ != nullptr && 
-      (current_->Valid()) &&
+      current_->Valid() &&
       (is_last_segment_ || comparator_->Compare(current_->key(), Slice(limit_)) < 0)) {
-    return;
+        oracle_savings_ += n_;
+        return;
   }
   // We're done with our range, now we want to find the next distinct range.
   is_last_segment_ = false; // We don't know yet if we're in the last_segment_
@@ -192,12 +193,6 @@ void MergingIterator::FindSmallest() {
     }
   }
 
-  /* TODO: Remove the stat in Compaction Stats
-  if (current_ == smallest) {
-    // These are n comparisions that we could have skipped!
-    oracle_savings_ += (n_-1);
-  }
-  */
   current_ = smallest;
   if(smallest == nullptr){
       return; //no more ranges - not valid
@@ -214,15 +209,14 @@ void MergingIterator::FindSmallest() {
   }
 
   std::string start = smallest->key().ToString();
-  std::string second_smallest_key = second_smallest->key().ToString();
   smallest->Seek(second_smallest->key());
-  while (smallest->Valid() && comparator_->Compare(smallest->key(), Slice(second_smallest_key)) == 0) {
+  while (smallest->Valid() && comparator_->Compare(smallest->key(), second_smallest->key()) == 0) {
       smallest->Next();
   }
 
   if (smallest->Valid()) {
     limit_ = std::string(smallest->key().ToString());
-    assert(comparator_->Compare(smallest->key(), Slice(second_smallest_key)) > 0);
+    assert(comparator_->Compare(smallest->key(), second_smallest->key()) > 0);
   }
   else {
     is_last_segment_ = true;
