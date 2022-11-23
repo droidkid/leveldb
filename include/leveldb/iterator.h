@@ -79,6 +79,7 @@ class LEVELDB_EXPORT Iterator {
   // not abstract and therefore clients should not override it.
   using CleanupFunction = void (*)(void* arg1, void* arg2);
   void RegisterCleanup(CleanupFunction function, void* arg1, void* arg2);
+  virtual int64_t get_oracle_savings() { return 0; }
 
  private:
   // Cleanup functions are stored in a single-linked list.
