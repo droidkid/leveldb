@@ -73,6 +73,7 @@ class LearnedMergingIterator : public Iterator {
  private:
 
   void FindSmallest();
+  bool GuessPosition(IteratorWrapper *iter, const Slice& guess_key, const Comparator &comparator, std::string &limit);
 
   // We might want to use a heap in case there are lots of children.
   // For now we use a simple array since we expect a very small number
@@ -87,15 +88,14 @@ class LearnedMergingIterator : public Iterator {
     bool is_last_segment_;
 };
 
-  bool GuessStrictlyGreaterKey(IteratorWrapper *iter, const Slice& guess_key, const Comparator &comparator, std::string &limit) { 
+  bool LearnedMergingIterator::GuessPosition(IteratorWrapper *iter, const Slice& guess_key, const Comparator &comparator, std::string &limit) { 
     std::string start_key(iter->key().ToString());
-      iter->Seek(guess_key);
-      while (iter->Valid() && comparator.Compare(iter->key(), Slice(guess_key)) == 0) {
-          iter->Next();
-      }
+    iter->Seek(guess_key);
+    while (iter->Valid() && comparator.Compare(iter->key(), Slice(guess_key)) == 0) {
+        iter->Next();
+    }
 
-      if (iter->Valid()) {
-        // TODO: Deal with GC later.
+    if (iter->Valid()) {
         limit.clear();
         limit.append(iter->key().ToString());
         iter->Seek(Slice(start_key));
@@ -105,8 +105,8 @@ class LearnedMergingIterator : public Iterator {
         iter->Seek(Slice(start_key));
         assert(comparator.Compare(iter->key(), Slice(start_key)) == 0);
         return false;
-      }
-  }
+    }
+}
 
 void LearnedMergingIterator::FindSmallest() {
   IteratorWrapper* smallest = nullptr;
@@ -145,18 +145,31 @@ void LearnedMergingIterator::FindSmallest() {
   // TODO: Find second_smallest()->key position in smallest using MLModel.Guess
   // This is our range for which current is smallest.
   // Option 1 -> assume guess is always correct
-   // limit = current_->guess(second_smallest->key());
+  // limit = current_->guess(second_smallest->key());
   
   if (second_smallest == nullptr) {
     is_last_segment_ = true;
     return;
   }
-  bool hasStrictlyGreaterKey = GuessStrictlyGreaterKey(smallest, second_smallest->key(), *comparator_, limit_);
+  bool hasStrictlyGreaterKey = GuessPosition(smallest, second_smallest->key(), *comparator_, limit_);
   is_last_segment_ = !hasStrictlyGreaterKey;
 }
 
 Iterator* NewLearnedMergingIterator(const Comparator* comparator, Iterator** children,
                              int n) {
+  assert(n >= 0);
+  if (n == 0) {
+    return NewEmptyIterator();
+  } else if (n == 1) {
+    return children[0];
+  } else {
+    return new LearnedMergingIterator(comparator, children, n);
+  }
+}
+
+Iterator* NewShadowedLearnedMergingIterator(const Comparator* comparator, Iterator** children,
+                             Iterator** shadow_children, int n) {
+  assert(false); // This function is not ready yet.
   assert(n >= 0);
   if (n == 0) {
     return NewEmptyIterator();
