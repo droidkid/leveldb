@@ -82,29 +82,28 @@ class LearnedMergingIterator : public Iterator {
   IteratorWrapper* children_;
   int n_;
   IteratorWrapper* current_;
-  int64_t oracle_savings_;
-    // Add some state variables
-    std::string limit_; 
-    bool is_last_segment_;
+  // State variables to keep track of current segment.
+  std::string limit_; 
+  bool is_last_segment_;
 };
 
-  bool LearnedMergingIterator::GuessPosition(IteratorWrapper *iter, const Slice& guess_key, const Comparator &comparator, std::string &limit) { 
-    std::string start_key(iter->key().ToString());
-    iter->Seek(guess_key);
-    while (iter->Valid() && comparator.Compare(iter->key(), Slice(guess_key)) == 0) {
-        iter->Next();
-    }
+bool LearnedMergingIterator::GuessPosition(IteratorWrapper *iter, const Slice& guess_key, const Comparator &comparator, std::string &limit) { 
+  std::string start_key(iter->key().ToString());
+  iter->Seek(guess_key);
+   while (iter->Valid() && comparator.Compare(iter->key(), Slice(guess_key)) == 0) {
+     iter->Next();
+   }
 
-    if (iter->Valid()) {
-        limit.clear();
-        limit.append(iter->key().ToString());
-        iter->Seek(Slice(start_key));
-        return true;
-      }
-      else {
-        iter->Seek(Slice(start_key));
-        assert(comparator.Compare(iter->key(), Slice(start_key)) == 0);
-        return false;
+   if (iter->Valid()) {
+     limit.clear();
+     limit.append(iter->key().ToString());
+     iter->Seek(Slice(start_key));
+     return true;
+    }
+    else {
+      iter->Seek(Slice(start_key));
+      assert(comparator.Compare(iter->key(), Slice(start_key)) == 0);
+      return false;
     }
 }
 
@@ -116,7 +115,6 @@ void LearnedMergingIterator::FindSmallest() {
   if (current_ != nullptr && 
       (current_->Valid()) &&
       (is_last_segment_ || comparator_->Compare(current_->key(), Slice(limit_)) < 0)) {
-        oracle_savings_ += (n_-1);
         return;
   }
 
@@ -154,6 +152,7 @@ void LearnedMergingIterator::FindSmallest() {
   bool hasStrictlyGreaterKey = GuessPosition(smallest, second_smallest->key(), *comparator_, limit_);
   is_last_segment_ = !hasStrictlyGreaterKey;
 }
+}  // namespace
 
 Iterator* NewLearnedMergingIterator(const Comparator* comparator, Iterator** children,
                              int n) {
@@ -179,6 +178,5 @@ Iterator* NewShadowedLearnedMergingIterator(const Comparator* comparator, Iterat
     return new LearnedMergingIterator(comparator, children, n);
   }
 }
-}  
-} // namespace leveldb
 
+} // namespace leveldb
