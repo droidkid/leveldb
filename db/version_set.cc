@@ -20,7 +20,7 @@
 #include "util/logging.h"
 
 #define USE_SHADOWED_LEARNED_MERGER 0
-#define USE_LEARNED_MERGER 0
+#define USE_LEARNED_MERGER 1
 
 #if USE_SHADOWED_LEARNED_MERGER  || USE_LEARNED_MERGER
 #include "table/learned_merger.h"

@@ -1349,6 +1349,7 @@ TEST_F(DBTest, Snapshot) {
 
 TEST_F(DBTest, HiddenValuesAreRemoved) {
   do {
+    std::cout<<"In this test"<<std::endl;
     Random rnd(301);
     FillLevels("a", "z");
 
