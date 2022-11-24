@@ -13,7 +13,8 @@ namespace leveldb {
 namespace {
 class LearnedMergingIterator : public Iterator {
  public:
-  LearnedMergingIterator(const Comparator* comparator, Iterator** children, int n)
+  LearnedMergingIterator(const Comparator* comparator, Iterator** children,
+                         int n)
       : comparator_(comparator),
         children_(new IteratorWrapper[n]),
         n_(n),
@@ -36,11 +37,11 @@ class LearnedMergingIterator : public Iterator {
   }
 
   void SeekToLast() override {
-    assert(false); //Not supported
+    assert(false);  // Not supported
   }
 
   void Seek(const Slice& target) override {
-    assert(false); //Not supported
+    assert(false);  // Not supported
   }
 
   void Next() override {
@@ -50,7 +51,7 @@ class LearnedMergingIterator : public Iterator {
   }
 
   void Prev() override {
-    assert(false); //Not supported
+    assert(false);  // Not supported
   }
 
   Slice key() const override {
@@ -75,9 +76,9 @@ class LearnedMergingIterator : public Iterator {
   }
 
  private:
-
   void FindSmallest();
-  bool GuessPosition(IteratorWrapper *iter, const Slice& guess_key, const Comparator &comparator, std::string &limit);
+  bool GuessPosition(IteratorWrapper* iter, const Slice& guess_key,
+                     const Comparator& comparator, std::string& limit);
 
   // We might want to use a heap in case there are lots of children.
   // For now we use a simple array since we expect a very small number
@@ -87,43 +88,46 @@ class LearnedMergingIterator : public Iterator {
   int n_;
   IteratorWrapper* current_;
   // State variables to keep track of current segment.
-  std::string limit_; 
+  std::string limit_;
   bool is_last_segment_;
 };
 
-bool LearnedMergingIterator::GuessPosition(IteratorWrapper *iter, const Slice& guess_key, const Comparator &comparator, std::string &limit) { 
+bool LearnedMergingIterator::GuessPosition(IteratorWrapper* iter,
+                                           const Slice& guess_key,
+                                           const Comparator& comparator,
+                                           std::string& limit) {
   std::string start_key(iter->key().ToString());
   iter->Seek(guess_key);
-   while (iter->Valid() && comparator.Compare(iter->key(), Slice(guess_key)) == 0) {
-     iter->Next();
-   }
+  while (iter->Valid() &&
+         comparator.Compare(iter->key(), Slice(guess_key)) == 0) {
+    iter->Next();
+  }
 
-   if (iter->Valid()) {
-     limit.clear();
-     limit.append(iter->key().ToString());
-     iter->Seek(Slice(start_key));
-     return true;
-    }
-    else {
-      iter->Seek(Slice(start_key));
-      assert(comparator.Compare(iter->key(), Slice(start_key)) == 0);
-      return false;
-    }
+  if (iter->Valid()) {
+    limit.clear();
+    limit.append(iter->key().ToString());
+    iter->Seek(Slice(start_key));
+    return true;
+  } else {
+    iter->Seek(Slice(start_key));
+    assert(comparator.Compare(iter->key(), Slice(start_key)) == 0);
+    return false;
+  }
 }
 
 void LearnedMergingIterator::FindSmallest() {
   IteratorWrapper* smallest = nullptr;
   IteratorWrapper* second_smallest = nullptr;
 
-  // TODO: If current is still smallest, just return current.
-  if (current_ != nullptr && 
+  if (current_ != nullptr &&
       (current_->Valid()) &&
       (is_last_segment_ || comparator_->Compare(current_->key(), Slice(limit_)) < 0)) {
         return;
   }
 
-  // We're done with our range, now we want to find the next distinct range.
-  is_last_segment_ = false; // We don't know yet if we're in the last_segment_
+  // Done with the current segment,
+  // Now to find the next distinct range.
+  is_last_segment_ = false;
 
   for (int i = 0; i < n_; i++) {
     IteratorWrapper* child = &children_[i];
@@ -133,33 +137,33 @@ void LearnedMergingIterator::FindSmallest() {
       } else if (comparator_->Compare(child->key(), smallest->key()) < 0) {
         second_smallest = smallest;
         smallest = child;
-      } else if (second_smallest==nullptr || comparator_->Compare(child->key(), second_smallest->key()) < 0) {
+      } else if (second_smallest == nullptr ||
+                 comparator_->Compare(child->key(), second_smallest->key()) <
+                     0) {
         second_smallest = child;
       }
     }
   }
 
   current_ = smallest;
-  if(smallest == nullptr){
-      return; //no more ranges - not valid
+
+  if (smallest == nullptr) {
+    return;  // no more ranges - not valid
   }
 
   // TODO: Find second_smallest()->key position in smallest using MLModel.Guess
-  // This is our range for which current is smallest.
-  // Option 1 -> assume guess is always correct
-  // limit = current_->guess(second_smallest->key());
-  
   if (second_smallest == nullptr) {
     is_last_segment_ = true;
     return;
   }
-  bool hasStrictlyGreaterKey = GuessPosition(smallest, second_smallest->key(), *comparator_, limit_);
+  bool hasStrictlyGreaterKey =
+      GuessPosition(smallest, second_smallest->key(), *comparator_, limit_);
   is_last_segment_ = !hasStrictlyGreaterKey;
 }
 }  // namespace
 
-Iterator* NewLearnedMergingIterator(const Comparator* comparator, Iterator** children,
-                             int n) {
+Iterator* NewLearnedMergingIterator(const Comparator* comparator,
+                                    Iterator** children, int n) {
   assert(n >= 0);
   if (n == 0) {
     return NewEmptyIterator();
