@@ -174,17 +174,4 @@ Iterator* NewLearnedMergingIterator(const Comparator* comparator,
   }
 }
 
-Iterator* NewShadowedLearnedMergingIterator(const Comparator* comparator, Iterator** children,
-                             Iterator** shadow_children, int n) {
-  assert(false); // This function is not ready yet.
-  assert(n >= 0);
-  if (n == 0) {
-    return NewEmptyIterator();
-  } else if (n == 1) {
-    return children[0];
-  } else {
-    return new LearnedMergingIterator(comparator, children, n);
-  }
-}
-
-} // namespace leveldb
+}  // namespace leveldb

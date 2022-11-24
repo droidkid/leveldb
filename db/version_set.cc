@@ -20,7 +20,7 @@
 #include "util/logging.h"
 
 #define USE_SHADOWED_LEARNED_MERGER 0
-#define USE_LEARNED_MERGER 1
+#define USE_LEARNED_MERGER 0
 
 #if USE_SHADOWED_LEARNED_MERGER  || USE_LEARNED_MERGER
 #include "table/learned_merger.h"
@@ -1247,7 +1247,7 @@ Iterator* VersionSet::MakeInputIterator(Compaction* c) {
         for (size_t i = 0; i < files.size(); i++) {
           list[num++] = table_cache_->NewIterator(options, files[i]->number,
                                                   files[i]->file_size);
-          #ifdef USE_SHADOWED_LEARNED_MERGER
+          #if USE_SHADOWED_LEARNED_MERGER
           shadow_list[shadow_num++] = table_cache_->NewIterator(options, 
                                             files[i]->number, files[i]->file_size);
           #endif
@@ -1257,6 +1257,12 @@ Iterator* VersionSet::MakeInputIterator(Compaction* c) {
         list[num++] = NewTwoLevelIterator(
             new Version::LevelFileNumIterator(icmp_, &c->inputs_[which]),
             &GetFileIterator, table_cache_, options);
+        #if USE_SHADOWED_LEARNED_MERGER
+        shadow_list[shadow_num++] = NewTwoLevelIterator(
+            new Version::LevelFileNumIterator(icmp_, &c->inputs_[which]),
+            &GetFileIterator, table_cache_, options);
+        #endif
+
       }
     }
   }
