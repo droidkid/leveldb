@@ -28,7 +28,11 @@ class LearnedMergingIterator : public Iterator {
   bool Valid() const override { return (current_ != nullptr); }
 
   void SeekToFirst() override {
-    assert(false); //Not supported
+    for (int i = 0; i < n_; i++) {
+      children_[i].SeekToFirst();
+    }
+    current_ = nullptr;
+    FindSmallest();
   }
 
   void SeekToLast() override {
