@@ -7,6 +7,7 @@
 #include "leveldb/comparator.h"
 #include "leveldb/iterator.h"
 #include "table/iterator_wrapper.h"
+#include "mod/plr.h"
 
 namespace leveldb {
 
@@ -21,6 +22,9 @@ class LearnedMergingIterator : public Iterator {
         current_(nullptr) {
     for (int i = 0; i < n; i++) {
       children_[i].Set(children[i]);
+      // TODO: train once, instead of every constructor call. For now, we just want something working.
+      // <INSERT PLR TRAINING HERE>
+        
     }
   }
 
