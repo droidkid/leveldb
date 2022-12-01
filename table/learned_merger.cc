@@ -8,7 +8,7 @@
 #include "leveldb/iterator.h"
 #include "table/iterator_wrapper.h"
 #include "mod/plr.h"
-
+#include<iostream>
 namespace leveldb {
 
 namespace {
@@ -19,6 +19,7 @@ class LearnedMergingIterator : public Iterator {
       : comparator_(comparator),
         children_(new IteratorWrapper[n]),
         keys_data_(std::vector<std::vector<std::string>>()),
+        keys_segments(std::vector<std::vector<Segment>>()),
         n_(n),
         current_(nullptr) {
     for (int i = 0; i < n; i++) {
@@ -31,10 +32,13 @@ class LearnedMergingIterator : public Iterator {
         children_[i].Next();
       }
       children_[i].SeekToFirst();
-
-      // TODO: train once, instead of every constructor call. For now, we just want something working.
-      // <INSERT PLR TRAINING HERE>
-        
+      PLR plr = PLR(10);   //error=10
+      std::vector<Segment> segs = plr.train(keys_data_[i]);
+      keys_segments.push_back(segs);
+      for (auto& str : keys_segments[i]) {
+        std::cout<<str.x<<" "<<str.k<<" "<<str.b;
+      }
+      // TODO: train once, instead of every constructor call. For now, we just want something working.        
     }
   }
 
@@ -100,6 +104,7 @@ class LearnedMergingIterator : public Iterator {
   const Comparator* comparator_;
   IteratorWrapper* children_;
   std::vector<std::vector<std::string>> keys_data_;
+  std::vector<std::vector<Segment>> keys_segments;
   int n_;
   IteratorWrapper* current_;
   // State variables to keep track of current segment.
