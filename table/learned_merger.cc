@@ -24,7 +24,7 @@ class LearnedMergingIterator : public Iterator {
     for (int i = 0; i < n; i++) {
 
       children_[i].Set(children[i]);
-      data_.push_back(std::vector<std::string>());
+      keys_data_.push_back(std::vector<std::string>());
       children_[i].SeekToFirst();
       while(children_[i].Valid()) {
         keys_data_[i].push_back(children_[i].key().ToString());
