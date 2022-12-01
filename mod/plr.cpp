@@ -1,9 +1,10 @@
 #include "plr.h"
-#include "util.h"
 #include <algorithm>
 #include <iostream>
 #include <string>
 #include <vector>
+
+using std::string;
 
 
 // Code modified from https://github.com/RyanMarcus/plr
@@ -167,10 +168,6 @@ PLR::train(std::vector<string>& keys, bool file) {
             this->segments.push_back(seg);
         }
 
-        if (!file && ++count % 10 == 0 && adgMod::env->compaction_awaiting.load() != 0) {
-            segments.clear();
-            return segments;
-        }
     }
 
     Segment last = plr.finish();
