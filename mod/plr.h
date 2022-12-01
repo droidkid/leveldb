@@ -49,11 +49,11 @@ private:
 
     void setup();
     Segment current_segment();
-    Segment process__(struct point pt, bool file);
+    Segment process__(struct point pt);
 
 public:
     GreedyPLR(double gamma);
-    Segment process(const struct point& pt, bool file);
+    Segment process(const struct point& pt);
     Segment finish();
 };
 
@@ -64,7 +64,5 @@ private:
 
 public:
     PLR(double gamma);
-    std::vector<Segment>& train(std::vector<std::string>& keys, bool file);
-//    std::vector<double> predict(std::vector<double> xx);
-//    double mae(std::vector<double> y_true, std::vector<double> y_pred);
+    std::vector<Segment>& train(std::vector<std::string>& keys);
 };
