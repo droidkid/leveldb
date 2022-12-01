@@ -18,10 +18,20 @@ class LearnedMergingIterator : public Iterator {
                          int n)
       : comparator_(comparator),
         children_(new IteratorWrapper[n]),
+        keys_data_(std::vector<std::vector<std::string>>()),
         n_(n),
         current_(nullptr) {
     for (int i = 0; i < n; i++) {
+
       children_[i].Set(children[i]);
+      data_.push_back(std::vector<std::string>());
+      children_[i].SeekToFirst();
+      while(children_[i].Valid()) {
+        keys_data_[i].push_back(children_[i].key().ToString());
+        children_[i].Next();
+      }
+      children_[i].SeekToFirst();
+
       // TODO: train once, instead of every constructor call. For now, we just want something working.
       // <INSERT PLR TRAINING HERE>
         
@@ -89,6 +99,7 @@ class LearnedMergingIterator : public Iterator {
   // of children in leveldb.
   const Comparator* comparator_;
   IteratorWrapper* children_;
+  std::vector<std::vector<std::string>> keys_data_;
   int n_;
   IteratorWrapper* current_;
   // State variables to keep track of current segment.
