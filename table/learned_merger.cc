@@ -22,12 +22,13 @@ class LearnedMergingIterator : public Iterator {
         children_(new IteratorWrapper[n]),
         keys_data_(std::vector<std::vector<uint64_t>>()),
         keys_segments_(std::vector<std::vector<Segment>>()),
+        keys_consumed_(std::vector<uint64_t>()),
         n_(n),
         current_(nullptr) {
     for (int i = 0; i < n; i++) {
-
       children_[i].Set(children[i]);
       keys_data_.push_back(std::vector<uint64_t>());
+      keys_consumed_.push_back(0);
       children_[i].SeekToFirst();
       while(children_[i].Valid()) {
         keys_data_[i].push_back(SliceToInteger(children_[i].key()));
@@ -66,6 +67,7 @@ class LearnedMergingIterator : public Iterator {
   void Next() override {
     assert(Valid());
     current_->Next();
+    keys_consumed_[current_iterator_index_]++;
     FindSmallest();
   }
 
@@ -110,8 +112,11 @@ class LearnedMergingIterator : public Iterator {
   IteratorWrapper* children_;
   std::vector<std::vector<uint64_t>> keys_data_;
   std::vector<std::vector<Segment>> keys_segments_;
+  std::vector<uint64_t> keys_consumed_;
   int n_;
   IteratorWrapper* current_;
+  int current_iterator_index_;
+  uint64_t current_key_limit_index_;
   // State variables to keep track of current segment.
   std::string limit_;
   bool is_last_segment_;
@@ -199,6 +204,14 @@ void LearnedMergingIterator::FindSmallest() {
       (is_last_segment_ || comparator_->Compare(current_->key(), Slice(limit_)) < 0)) {
         return;
   }
+#if 0
+  if (current_ != nullptr &&
+      (current_->Valid()) &&
+      (keys_consumed_[current_iterator_index_] < current_key_limit_index_)) {
+        return;
+  }
+#endif
+
 
   // Done with the current segment,
   // Now to find the next distinct range.
@@ -223,6 +236,7 @@ void LearnedMergingIterator::FindSmallest() {
   }
 
   current_ = smallest;
+  current_iterator_index_ = smallest_iterator_index;
 
   if (smallest == nullptr) {
     return;  // no more ranges - not valid
@@ -243,9 +257,8 @@ void LearnedMergingIterator::FindSmallest() {
 
   // TODO: We have to correct error for approx_pos to be first key greater than target_int
   std::cout<<approx_pos<<"\n";
-
   // smallest->cur_pos -> where smallest is set now
-  // smallest->dst_pos -> position of approx_pos corrected.
+  // current_key_limit_index_ = position of approx_pos corrected.
   // now keep smallest for (dst_pos - cur_pos) range.
 }
 }  // namespace
