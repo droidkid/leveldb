@@ -7,6 +7,7 @@
 #include "leveldb/comparator.h"
 #include "leveldb/iterator.h"
 #include "table/iterator_wrapper.h"
+#include<iostream>
 
 namespace leveldb {
 
@@ -17,6 +18,7 @@ class MergingIterator : public Iterator {
       : comparator_(comparator),
         children_(new IteratorWrapper[n]),
         n_(n),
+        comparison_count_(0),
         current_(nullptr),
         direction_(kForward) {
     for (int i = 0; i < n; i++) {
@@ -26,7 +28,13 @@ class MergingIterator : public Iterator {
 
   ~MergingIterator() override { delete[] children_; }
 
-  bool Valid() const override { return (current_ != nullptr); }
+  bool Valid() const override { 
+    if(current_ == nullptr) {
+      std::cout<<"Number of iterators :"<<n_<<" ";
+      std::cout<<"Comparison count : "<<comparison_count_<<"\n";
+    }
+    return (current_ != nullptr); 
+    }
 
   void SeekToFirst() override {
     for (int i = 0; i < n_; i++) {
@@ -141,6 +149,7 @@ class MergingIterator : public Iterator {
   const Comparator* comparator_;
   IteratorWrapper* children_;
   int n_;
+  uint64_t comparison_count_;
   IteratorWrapper* current_;
   Direction direction_;
 };
@@ -155,6 +164,7 @@ void MergingIterator::FindSmallest() {
       } else if (comparator_->Compare(child->key(), smallest->key()) < 0) {
         smallest = child;
       }
+      comparison_count_++;
     }
   }
   current_ = smallest;

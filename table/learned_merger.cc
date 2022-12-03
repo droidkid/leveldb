@@ -24,6 +24,8 @@ class LearnedMergingIterator : public Iterator {
         keys_segments_(std::vector<std::vector<Segment>>()),
         keys_consumed_(std::vector<uint64_t>()),
         n_(n),
+        comparison_count_(0),
+        cdf_error_count_(0),
         current_(nullptr) {
     for (int i = 0; i < n; i++) {
       children_[i].Set(children[i]);
@@ -46,7 +48,19 @@ class LearnedMergingIterator : public Iterator {
   
   ~LearnedMergingIterator() override { delete[] children_; }
 
-  bool Valid() const override { return (current_ != nullptr); }
+  bool Valid() const override { 
+    if(current_ == nullptr) {
+      uint64_t total_item_number=0;
+      for (int i = 0; i < n_; i++){
+        total_item_number += keys_data_[i].size();
+      }
+      std::cout<<"Compaction size : "<<total_item_number<<" ";
+      std::cout<<"Number of iterators :"<<n_<<" ";
+      std::cout<<"Comparison count : "<<comparison_count_<<" ";
+      std::cout<<"CDF Error count : "<<cdf_error_count_<<"\n";
+    }
+    return (current_ != nullptr); 
+  }
 
   void SeekToFirst() override {
     for (int i = 0; i < n_; i++) {
@@ -114,6 +128,8 @@ class LearnedMergingIterator : public Iterator {
   std::vector<std::vector<Segment>> keys_segments_;
   std::vector<uint64_t> keys_consumed_;
   int n_;
+  uint64_t comparison_count_;
+  uint64_t cdf_error_count_;
   IteratorWrapper* current_;
   int current_iterator_index_;
   uint64_t current_key_limit_index_;
@@ -225,12 +241,14 @@ void LearnedMergingIterator::FindSmallest() {
         smallest = child;
         smallest_iterator_index = i;
       } else if (comparator_->Compare(child->key(), smallest->key()) < 0) {
+        comparison_count_+=1;
         second_smallest = smallest;
         smallest = child;
         smallest_iterator_index = i;
       } else if (second_smallest == nullptr ||
                  comparator_->Compare(child->key(), second_smallest->key()) <
                      0) {
+        comparison_count_+=2;
         second_smallest = child;
       }
     }
@@ -249,7 +267,7 @@ void LearnedMergingIterator::FindSmallest() {
     current_key_limit_index_ = keys_data_[smallest_iterator_index].size();
     return;
   }
-  std::cout<<"Starting to find smallest"<<"\n";
+  //std::cout<<"Starting to find smallest"<<"\n";
   // TODO: Guard these with pound signs
 #if 0
   bool hasStrictlyGreaterKey =
@@ -268,18 +286,20 @@ void LearnedMergingIterator::FindSmallest() {
       approx_pos = 0;
   }
   if (approx_pos >= keys_data_[smallest_iterator_index].size()){
+      cdf_error_count_++;
       approx_pos = keys_data_[smallest_iterator_index].size()-1;
   }
 
   while(approx_pos >= 0 && keys_data_[smallest_iterator_index][approx_pos]> target_int){
+      cdf_error_count_++;
       approx_pos--;
   }
 
   while(approx_pos < keys_data_[smallest_iterator_index].size() && keys_data_[smallest_iterator_index][approx_pos]< target_int){
+      cdf_error_count_++;
       approx_pos++;
   }
   current_key_limit_index_ = approx_pos;
-  std::cout<<"found smallest"<<"\n";
   // now keep smallest for (dst_pos - cur_pos) range.
 }
 }  // namespace
