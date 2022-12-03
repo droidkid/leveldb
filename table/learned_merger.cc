@@ -199,18 +199,19 @@ void LearnedMergingIterator::FindSmallest() {
   IteratorWrapper* smallest = nullptr;
   IteratorWrapper* second_smallest = nullptr;
 
+#if 0
   if (current_ != nullptr &&
       (current_->Valid()) &&
       (is_last_segment_ || comparator_->Compare(current_->key(), Slice(limit_)) < 0)) {
         return;
   }
-#if 0
+#endif
   if (current_ != nullptr &&
       (current_->Valid()) &&
       (keys_consumed_[current_iterator_index_] < current_key_limit_index_)) {
         return;
   }
-#endif
+
 
 
   // Done with the current segment,
@@ -245,20 +246,40 @@ void LearnedMergingIterator::FindSmallest() {
   // TODO: Find second_smallest()->key position in smallest using MLModel.Guess
   if (second_smallest == nullptr) {
     is_last_segment_ = true;
+    current_key_limit_index_ = keys_data_[smallest_iterator_index].size();
     return;
   }
+  std::cout<<"Starting to find smallest"<<"\n";
   // TODO: Guard these with pound signs
+#if 0
   bool hasStrictlyGreaterKey =
       GuessPosition(smallest, second_smallest->key(), *comparator_, limit_);
   is_last_segment_ = !hasStrictlyGreaterKey;
-
+#endif
   uint64_t target_int = SliceToInteger(second_smallest->key());
   uint64_t approx_pos = GuessPositionFromPLR(target_int, smallest_iterator_index);
 
   // TODO: We have to correct error for approx_pos to be first key greater than target_int
-  std::cout<<approx_pos<<"\n";
+  //std::cout<<approx_pos<<"\n";
+
   // smallest->cur_pos -> where smallest is set now
   // current_key_limit_index_ = position of approx_pos corrected.
+  if (approx_pos < 0){
+      approx_pos = 0;
+  }
+  if (approx_pos >= keys_data_[smallest_iterator_index].size()){
+      approx_pos = keys_data_[smallest_iterator_index].size()-1;
+  }
+
+  while(approx_pos >= 0 && keys_data_[smallest_iterator_index][approx_pos]> target_int){
+      approx_pos--;
+  }
+
+  while(approx_pos < keys_data_[smallest_iterator_index].size() && keys_data_[smallest_iterator_index][approx_pos]< target_int){
+      approx_pos++;
+  }
+  current_key_limit_index_ = approx_pos;
+  std::cout<<"found smallest"<<"\n";
   // now keep smallest for (dst_pos - cur_pos) range.
 }
 }  // namespace
