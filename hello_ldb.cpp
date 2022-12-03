@@ -29,8 +29,7 @@ int main() {
 
 
     for (int i=0; i < NUM_KEYS; i++) {
-        string key = generate_key(to_string(i));
-        if(i%1000000==0)std::cout<<"Key: "<<key<<"\n";
+        string key = generate_key(to_string(rand() % NUM_KEYS));
         string *value = new string(VALUE);
         db->Put(leveldb::WriteOptions(), key, *value);
         delete value;
@@ -40,13 +39,6 @@ int main() {
     std::string stats;
     std::cout<<db->GetProperty("leveldb.stats", &stats);
     std::cout<<stats<<std::endl;
-
-    for (int i=0; i < NUM_KEYS; i++) {
-        string key = generate_key(to_string(i));
-        std::string value;
-        status = db->Get(leveldb::ReadOptions(), key, &value);
-        assert(status.ok() && value == VALUE);
-    }
 
     cout<<"Ok!"<<endl;
 }

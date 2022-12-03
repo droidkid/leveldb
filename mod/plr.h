@@ -64,5 +64,5 @@ private:
 
 public:
     PLR(double gamma);
-    std::vector<Segment>& train(std::vector<std::string>& keys);
+    std::vector<Segment>& train(std::vector<uint64_t>& keys);
 };

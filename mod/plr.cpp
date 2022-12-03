@@ -148,12 +148,11 @@ PLR::PLR(double gamma) {
 }
 
 std::vector<Segment>&
-PLR::train(std::vector<string>& keys) {
+PLR::train(std::vector<uint64_t>& keys) {
     GreedyPLR plr(this->gamma);
-    int count = 0;
     size_t size = keys.size();
     for (int i = 0; i < size; ++i) {
-        Segment seg = plr.process(point((double) stoull(keys[i]), i));
+        Segment seg = plr.process(point((double) keys[i], i));
         if (seg.x != 0 ||
             seg.k != 0 ||
             seg.b != 0) {

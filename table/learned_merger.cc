@@ -20,40 +20,26 @@ class LearnedMergingIterator : public Iterator {
                          int n)
       : comparator_(comparator),
         children_(new IteratorWrapper[n]),
-        keys_data_(std::vector<std::vector<std::string>>()),
+        keys_data_(std::vector<std::vector<uint64_t>>()),
         keys_segments_(std::vector<std::vector<Segment>>()),
-        keys_bounds_(std::vector<std::pair<uint64_t, uint64_t>>()),
         n_(n),
         current_(nullptr) {
-    assert(false);
     for (int i = 0; i < n; i++) {
 
       children_[i].Set(children[i]);
-      keys_data_.push_back(std::vector<std::string>());
+      keys_data_.push_back(std::vector<uint64_t>());
       children_[i].SeekToFirst();
-      // Handle case when children_[i] is empty.
-      uint64_t prev_key = SliceToInteger(children_[i].key());
-      keys_bounds_.push_back(
-        std::pair<uint64_t, uint64_t>(
-                  SliceToInteger(children_[i].key()), 0));
-
       while(children_[i].Valid()) {
-        keys_data_[i].push_back(children_[i].key().ToString());
-        keys_bounds_[i].second = (SliceToInteger(children_[i].key()));
+        keys_data_[i].push_back(SliceToInteger(children_[i].key()));
         children_[i].Next();
-        
-        uint64_t key = SliceToInteger(children_[i].key());
-        assert(key >= prev_key);
-        prev_key = key;
       }
       children_[i].SeekToFirst();
       PLR plr = PLR(10);   //error=10
       std::vector<Segment> segs = plr.train(keys_data_[i]);
       keys_segments_.push_back(segs);
       for (auto& str : keys_segments_[i]) {
-        std::cout<<str.x<<" "<<str.k<<" "<<str.b;
+        //std::cout<<str.x<<" "<<str.k<<" "<<str.b<<"\n";
       }
-      // TODO: train once, instead of every constructor call. For now, we just want something working.        
     }
   }
   
@@ -113,7 +99,7 @@ class LearnedMergingIterator : public Iterator {
   bool GuessPosition(IteratorWrapper* iter, const Slice& guess_key,
                      const Comparator& comparator, std::string& limit);
   uint64_t GuessPositionFromPLR(
-    const Slice& target_x, 
+    const uint64_t target_int,
     const int iterator_index);
   uint64_t SliceToInteger(const Slice& slice);
 
@@ -122,9 +108,8 @@ class LearnedMergingIterator : public Iterator {
   // of children in leveldb.
   const Comparator* comparator_;
   IteratorWrapper* children_;
-  std::vector<std::vector<std::string>> keys_data_;
+  std::vector<std::vector<uint64_t>> keys_data_;
   std::vector<std::vector<Segment>> keys_segments_;
-  std::vector<std::pair<uint64_t, uint64_t>> keys_bounds_;
   int n_;
   IteratorWrapper* current_;
   // State variables to keep track of current segment.
@@ -141,24 +126,26 @@ uint64_t LearnedMergingIterator::SliceToInteger(const Slice& slice) {
 
     for (int i = 0; i < size; ++i) {
         int temp = data[i];
+        // TODO: Figure out where the extra bytes are coming from
+        if (temp < '0' || temp >'9') break;
         if (leading_zeros && temp == '0') continue;
         leading_zeros = false;
         num = (num << 3) + (num << 1) + temp - 48;
     }
+    // std::cout<<"From Slice: "<<num<<std::endl;
     return num;
 }
 
 
 uint64_t LearnedMergingIterator::GuessPositionFromPLR(
-    const Slice& target_x, 
+    const uint64_t target_int,
     const int iterator_index){
 
   const std::vector<Segment> segments = keys_segments_[iterator_index];
-  uint64_t min_key = keys_bounds_[iterator_index].first; // TODO: fill the right value
-  uint64_t max_key = keys_bounds_[iterator_index].second; // TODO: fill the right value
+  uint64_t min_key = keys_data_[iterator_index].front();
+  uint64_t max_key = keys_data_[iterator_index].back();
   uint64_t size = keys_data_[iterator_index].size();
   // check if the key is within the model bounds
-  uint64_t target_int = SliceToInteger(target_x);
   if (target_int > max_key) return size;
   if (target_int < min_key) return 0;
   
@@ -251,8 +238,15 @@ void LearnedMergingIterator::FindSmallest() {
       GuessPosition(smallest, second_smallest->key(), *comparator_, limit_);
   is_last_segment_ = !hasStrictlyGreaterKey;
 
-  uint64_t approx_pos = GuessPositionFromPLR(second_smallest->key(),smallest_iterator_index);
+  uint64_t target_int = SliceToInteger(second_smallest->key());
+  uint64_t approx_pos = GuessPositionFromPLR(target_int, smallest_iterator_index);
+
+  // TODO: We have to correct error for approx_pos to be first key greater than target_int
   std::cout<<approx_pos<<"\n";
+
+  // smallest->cur_pos -> where smallest is set now
+  // smallest->dst_pos -> position of approx_pos corrected.
+  // now keep smallest for (dst_pos - cur_pos) range.
 }
 }  // namespace
 
