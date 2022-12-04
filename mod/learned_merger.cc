@@ -9,7 +9,6 @@
 #include "mod/plr.h"
 #include "mod/config.h"
 
-#include <iostream>
 #include <cmath>
 
 namespace leveldb {
@@ -25,9 +24,12 @@ class LearnedMergingIterator : public Iterator {
         keys_segments_(std::vector<std::vector<Segment>>()),
         keys_consumed_(std::vector<uint64_t>()),
         n_(n),
-        comparison_count_(0),
-        cdf_error_count_(0),
         current_(nullptr) {
+
+    stats_.num_items = 0;
+    stats_.cdf_abs_error = 0;
+    stats_.comp_count = 0;
+
     for (int i = 0; i < n; i++) {
       children_[i].Set(children[i]);
 
@@ -38,6 +40,7 @@ class LearnedMergingIterator : public Iterator {
       while(children_[i].Valid()) {
         keys_data_[i].push_back(children_[i].key().ToString());
         children_[i].Next();
+        stats_.num_items++;
       }
       children_[i].SeekToFirst();
       PLR plr = PLR(PLR_ERROR);
@@ -100,14 +103,8 @@ class LearnedMergingIterator : public Iterator {
     return status;
   }
 
-  void print_stats() const override {
-    uint64_t total_item_number=0;
-    for (int i = 0; i < n_; i++){
-      total_item_number += keys_data_[i].size();
-    }
-    std::cout<<total_item_number<<",";
-    std::cout<<comparison_count_<<",";
-    std::cout<<cdf_error_count_<<",";
+  MergerStats get_merger_stats() override {
+    return stats_;
   }
 
  private:
@@ -125,11 +122,10 @@ class LearnedMergingIterator : public Iterator {
   std::vector<std::vector<std::string>> keys_data_;
   std::vector<std::vector<Segment>> keys_segments_;
   std::vector<uint64_t> keys_consumed_;
-  uint64_t comparison_count_;
-  uint64_t cdf_error_count_;
   IteratorWrapper* current_;
   int current_iterator_index_;
   uint64_t current_key_limit_index_;
+  MergerStats stats_;
 };
 
 
@@ -172,6 +168,7 @@ void LearnedMergingIterator::FindSmallest() {
   if (current_ != nullptr &&
       (current_->Valid()) &&
       (keys_consumed_[current_iterator_index_] < current_key_limit_index_)) {
+        // TODO: Should this comparision be counted?
         return;
   }
 
@@ -182,14 +179,14 @@ void LearnedMergingIterator::FindSmallest() {
         smallest = child;
         smallest_iterator_index = i;
       } else if (comparator_->Compare(child->key(), smallest->key()) < 0) {
-        comparison_count_+=1;
+        stats_.comp_count+=1;
         second_smallest = smallest;
         smallest = child;
         smallest_iterator_index = i;
       } else if (second_smallest == nullptr ||
                  comparator_->Compare(child->key(), second_smallest->key()) <
                      0) {
-        comparison_count_+=2;
+        stats_.comp_count+=2;
         second_smallest = child;
       }
     }
@@ -224,7 +221,7 @@ void LearnedMergingIterator::FindSmallest() {
         Slice(keys_data_[smallest_iterator_index][approx_pos]), 
         Slice(target_key)
       ) > 0) {
-      cdf_error_count_++;
+      stats_.cdf_abs_error++;
       approx_pos--;
   }
 
@@ -232,7 +229,7 @@ void LearnedMergingIterator::FindSmallest() {
   while(approx_pos < keys_data_[smallest_iterator_index].size() && 
    comparator_->Compare(
     Slice(keys_data_[smallest_iterator_index][approx_pos]), Slice(target_key)) < 0){
-      cdf_error_count_++;
+      stats_.cdf_abs_error++;
       approx_pos++;
   }
 

@@ -22,8 +22,7 @@ class LearnedMergingWithShadowIterator : public Iterator {
                                    Iterator** shadow_children, int n)
       : mergingIterator_(NewMergingIterator(comparator, shadow_children, n)),
         learnedMergingIterator_(
-            NewLearnedMergingIterator(comparator, children, n)) {
-  }
+            NewLearnedMergingIterator(comparator, children, n)) {}
 
   ~LearnedMergingWithShadowIterator() override {
     delete mergingIterator_;
