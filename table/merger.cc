@@ -7,7 +7,6 @@
 #include "leveldb/comparator.h"
 #include "leveldb/iterator.h"
 #include "table/iterator_wrapper.h"
-#include<iostream>
 
 namespace leveldb {
 
@@ -18,12 +17,14 @@ class MergingIterator : public Iterator {
       : comparator_(comparator),
         children_(new IteratorWrapper[n]),
         n_(n),
-        comparison_count_(0),
         current_(nullptr),
         direction_(kForward) {
     for (int i = 0; i < n; i++) {
       children_[i].Set(children[i]);
     }
+    stats_.num_items = 0;
+    stats_.cdf_abs_error = 0;
+    stats_.comp_count = 0;
   }
 
   ~MergingIterator() override { delete[] children_; }
@@ -79,6 +80,7 @@ class MergingIterator : public Iterator {
     }
 
     current_->Next();
+    stats_.num_items++;
     FindSmallest();
   }
 
@@ -132,9 +134,8 @@ class MergingIterator : public Iterator {
     return status;
   }
 
-  void print_stats() const override {
-    std::cout<<comparison_count_<<",";
-    std::cout<<n_<<",";
+  MergerStats get_merger_stats() override {
+    return stats_;
   }
 
  private:
@@ -150,9 +151,9 @@ class MergingIterator : public Iterator {
   const Comparator* comparator_;
   IteratorWrapper* children_;
   int n_;
-  uint64_t comparison_count_;
   IteratorWrapper* current_;
   Direction direction_;
+  MergerStats stats_;
 };
 
 void MergingIterator::FindSmallest() {
@@ -165,7 +166,7 @@ void MergingIterator::FindSmallest() {
       } else if (comparator_->Compare(child->key(), smallest->key()) < 0) {
         smallest = child;
       }
-      comparison_count_++;
+      stats_.comp_count++;
     }
   }
   current_ = smallest;

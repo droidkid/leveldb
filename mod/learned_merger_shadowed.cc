@@ -7,6 +7,7 @@
 #include "table/merger.h"
 #include "mod/learned_merger.h"
 
+#include <fstream>
 #include <iostream>
 
 namespace leveldb {
@@ -21,7 +22,8 @@ class LearnedMergingWithShadowIterator : public Iterator {
                                    Iterator** shadow_children, int n)
       : mergingIterator_(NewMergingIterator(comparator, shadow_children, n)),
         learnedMergingIterator_(
-            NewLearnedMergingIterator(comparator, children, n)) {}
+            NewLearnedMergingIterator(comparator, children, n)) {
+  }
 
   ~LearnedMergingWithShadowIterator() override {
     delete mergingIterator_;
@@ -55,11 +57,20 @@ class LearnedMergingWithShadowIterator : public Iterator {
     assert(false);  // Not supported
   }
 
-  void print_stats() const override {
-    // number of items, learned_comparisions, cdf_error, standard_comparisions, num_iterators
-    learnedMergingIterator_->print_stats();
-    mergingIterator_->print_stats();
-    std::cout<<std::endl;
+  MergerStats get_merger_stats() override {
+    MergerStats lm = learnedMergingIterator_->get_merger_stats();
+    MergerStats m = mergingIterator_->get_merger_stats();
+    assert(m.num_items == lm.num_items);
+
+    std::ofstream stats;
+    stats.open("stats.csv", std::ofstream::app);
+    stats << lm.num_items<<",";
+    stats << m.comp_count<<",";
+    stats << lm.comp_count<<",";
+    stats << lm.cdf_abs_error<<"\n";
+    stats.close();
+
+    return m;
   }
 
   Slice key() const override {

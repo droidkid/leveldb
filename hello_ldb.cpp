@@ -1,11 +1,12 @@
 #include <iostream>
 #include <cassert>
+#include <fstream>
 
 #include "leveldb/db.h"
 #include "mod/zipf.h"
+#include "mod/config.h"
 using namespace std;
 
-#define NUM_KEYS 5000000
 const std::string DB_NAME = "./DB";
 const std::string VALUE = "vaaddd                                                                                dcdwcwcwcewcwecwecwecwecewcewcewdewdwcwecwecwecwecwecwecwecwecwecwecwecfevcggggggggglue::value::value::dljiosdjfskldjfsdlkjfsdlkjfsdlkfjsd";
 
@@ -16,6 +17,16 @@ string generate_key(const string& key) {
 }
 
 int main() {
+    #if LOG_METRICS
+    std::ofstream stats;
+    stats.open("stats.csv", std::ofstream::out);
+    stats << "NUM_ITEMS" <<",";
+    stats << "COMP_COUNT" <<",";
+    stats << "LEARNED_COMP_COUNT" <<",";
+    stats << "CDF_ABS_ERROR" <<",";
+    stats.close();
+    #endif
+
     // Destroy the DB and create it again. 
     // We want to start from scratch.
     leveldb::Options options;
@@ -51,9 +62,9 @@ int main() {
     // }
 
     std::cout<<"DB Stats"<<std::endl;
-    std::string stats;
-    std::cout<<db->GetProperty("leveldb.stats", &stats);
-    std::cout<<stats<<std::endl;
+    std::string db_stats;
+    std::cout<<db->GetProperty("leveldb.stats", &db_stats);
+    std::cout<<db_stats<<std::endl;
 
     cout<<"Ok!"<<endl;
 }

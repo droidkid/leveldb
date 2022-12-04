@@ -21,6 +21,12 @@
 
 namespace leveldb {
 
+struct MergerStats {
+    uint64_t num_items;
+    uint64_t cdf_abs_error;
+    uint64_t comp_count;
+};
+
 class LEVELDB_EXPORT Iterator {
  public:
   Iterator();
@@ -72,7 +78,11 @@ class LEVELDB_EXPORT Iterator {
   // If an error has occurred, return it.  Else return an ok status.
   virtual Status status() const = 0;
 
-  virtual void print_stats() const {}
+  virtual MergerStats get_merger_stats() {
+    // Dummy implementation.
+    MergerStats m;
+    return m;
+  }
 
   // Clients are allowed to register function/arg1/arg2 triples that
   // will be invoked when this iterator is destroyed.
