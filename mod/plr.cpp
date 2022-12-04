@@ -169,14 +169,20 @@ std::vector<Segment>&
 PLR::train(std::vector<string>& keys) {
     GreedyPLR plr(this->gamma);
     size_t size = keys.size();
+    int num_key = 0;
+    uint64_t prev_key = 0;
     for (int i = 0; i < size; ++i) {
-        Segment seg = plr.process(point((double) LdbKeyToInteger(keys[i]), i));
+        uint64_t current_key = LdbKeyToInteger(keys[i]);
+        if (i && prev_key == current_key) {
+            continue;
+        }
+        Segment seg = plr.process(point((double) current_key, i));
         if (seg.x != 0 ||
             seg.k != 0 ||
             seg.b != 0) {
             this->segments.push_back(seg);
         }
-
+        prev_key = current_key;
     }
 
     Segment last = plr.finish();
