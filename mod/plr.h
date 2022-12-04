@@ -35,6 +35,8 @@ bool is_below(struct point pt, struct line l);
 struct point get_upper_bound(struct point pt, double gamma);
 struct point get_lower_bound(struct point pt, double gamma);
 
+uint64_t LdbKeyToInteger(const std::string& str);
+
 
 class GreedyPLR {
 private:
@@ -64,5 +66,5 @@ private:
 
 public:
     PLR(double gamma);
-    std::vector<Segment>& train(std::vector<uint64_t>& keys);
+    std::vector<Segment>& train(std::vector<std::string>& keys);
 };

@@ -7,12 +7,14 @@
 
 #include "table/learned_merger.h"
 #include "table/merger.h"
+#include <iostream>
 
 namespace leveldb {
 
 namespace {
 // TODO: Verify this is a good name.
 class LearnedMergingWithShadowIterator : public Iterator {
+
  public:
   LearnedMergingWithShadowIterator(const Comparator* comparator,
                                    Iterator** children,
@@ -54,8 +56,12 @@ class LearnedMergingWithShadowIterator : public Iterator {
   }
 
   Slice key() const override {
-    assert(mergingIterator_->key().compare(learnedMergingIterator_->key()) ==
-           0);
+    if(mergingIterator_->key().compare(learnedMergingIterator_->key()) !=
+           0) {
+            std::cout<<mergingIterator_->key().ToString()<<std::endl;
+            std::cout<<learnedMergingIterator_->key().ToString()<<std::endl;
+            assert(false);
+      }
     return mergingIterator_->key();
   }
 

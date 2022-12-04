@@ -62,6 +62,24 @@ GreedyPLR::GreedyPLR(double gamma) {
 
 int counter = 0;
 
+uint64_t LdbKeyToInteger(const std::string& str) {
+    const char* data = str.data();
+    size_t size = str.size();
+    uint64_t num = 0;
+    bool leading_zeros = true;
+
+    for (int i = 0; i < size; ++i) {
+        int temp = data[i];
+        // TODO: Figure out where the extra bytes are coming from
+        if (temp < '0' || temp >'9') break;
+        if (leading_zeros && temp == '0') continue;
+        leading_zeros = false;
+        num = (num << 3) + (num << 1) + temp - 48;
+    }
+    return num;
+}
+
+
 Segment
 GreedyPLR::process(const struct point& pt) {
     Segment s = {0, 0, 0};
@@ -148,11 +166,11 @@ PLR::PLR(double gamma) {
 }
 
 std::vector<Segment>&
-PLR::train(std::vector<uint64_t>& keys) {
+PLR::train(std::vector<string>& keys) {
     GreedyPLR plr(this->gamma);
     size_t size = keys.size();
     for (int i = 0; i < size; ++i) {
-        Segment seg = plr.process(point((double) keys[i], i));
+        Segment seg = plr.process(point((double) LdbKeyToInteger(keys[i]), i));
         if (seg.x != 0 ||
             seg.k != 0 ||
             seg.b != 0) {
