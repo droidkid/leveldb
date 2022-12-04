@@ -1,65 +1,78 @@
 #include <iostream>
 #include <cassert>
 #include <fstream>
+#include <vector>
 
 #include "leveldb/db.h"
 #include "mod/zipf.h"
 #include "mod/config.h"
 using namespace std;
 
-const std::string DB_NAME = "./DB";
-const std::string VALUE = "vaaddd                                                                                dcdwcwcwcewcwecwecwecwecewcewcewdewdwcwecwecwecwecwecwecwecwecwecwecwecfevcggggggggglue::value::value::dljiosdjfskldjfsdlkjfsdlkjfsdlkfjsd";
+#define BENCH_RANDOM_KEYS 0
+#define BENCH_ZIPF_KEYS 1
 
-string generate_key(const string& key) {
-    int key_size=10;
-    string result = string(key_size - key.length(), '0') + key;
+const std::string DB_NAME = "./DB";
+const std::string VALUE = "vaajiosdjfskldjfsdlkjfsdlkjfsdlkfjsd";
+
+string generate_key(uint64_t key_value) {
+    string key = to_string(key_value);
+    string result = string(KEY_SIZE - key.length(), '0') + key;
     return std::move(result);
 }
 
-int main() {
+void generate_keys(int test_case, vector<std::string> &keys) {
+    if (test_case ==  BENCH_RANDOM_KEYS) {
+        for(int i=0; i< NUM_KEYS; i++){
+            keys.push_back(generate_key(random() % KEY_UNIVERSE));
+        }
+        return;
+    }
+    if (test_case == BENCH_ZIPF_KEYS) {
+        ZIPFIAN z = create_zipfian(ZIPF_POWER, KEY_UNIVERSE, random);
+        for(int i=0; i< NUM_KEYS; i++){
+            keys.push_back(generate_key(zipfian_gen(z)));
+        }
+        return;
+
+    }
+    assert(false);
+}
+
+int main(int argc, char **argv) {
     #if LOG_METRICS
-    std::ofstream stats;
-    stats.open("stats.csv", std::ofstream::out);
-    stats << "NUM_ITEMS" <<",";
-    stats << "COMP_COUNT" <<",";
-    stats << "LEARNED_COMP_COUNT" <<",";
-    stats << "CDF_ABS_ERROR" <<",";
-    stats.close();
+        std::ofstream stats;
+        stats.open("stats.csv", std::ofstream::out);
+        stats << "NUM_ITEMS" <<",";
+        stats << "COMP_COUNT" <<",";
+        stats << "LEARNED_COMP_COUNT" <<",";
+        stats << "CDF_ABS_ERROR" <<",\n";
+        stats.close();
     #endif
 
+    // TODO: Add error checks here.
+    int test_case = argv[1][0] - '0';
+    vector<std::string> keys;
+    generate_keys(test_case, keys);
+
     // Destroy the DB and create it again. 
-    // We want to start from scratch.
     leveldb::Options options;
     leveldb::Status status = leveldb::DestroyDB(DB_NAME, options);
     assert(status.ok() || status.IsNotFound());
 
     leveldb::DB* db;
-    // Probably don't reuse options, safer to create a new one.
     options.create_if_missing = true;
     status = leveldb::DB::Open(options, DB_NAME, &db);
     assert(status.ok());
 
-    //uint64_t *elems = new uint64_t[100000];
-    //create_zipfian();
-    ZIPFIAN z = create_zipfian(1.5, 10000000, random);
-    long g = zipfian_gen(z);
-
-
-    //generate_random_keys(elems, 1000000, 100000, 1.5);
-
-    for(int i=0; i< 5000000; i++){
-        long g = zipfian_gen(z);
-        string key = generate_key(to_string(g));
-        string *value = new string(VALUE);
-        db->Put(leveldb::WriteOptions(), key, *value);
-        delete value;  
+    for(auto k: keys) { 
+        db->Put(leveldb::WriteOptions(), k, k);
     }
-    // for (int i=0; i < NUM_KEYS; i++) {
-    //     string key = generate_key(to_string(rand() % NUM_KEYS));
-    //     string *value = new string(VALUE);
-    //     db->Put(leveldb::WriteOptions(), key, *value);
-    //     delete value;
-    // }
+
+    for(auto k: keys) { 
+        std::string value;
+        status = db->Get(leveldb::ReadOptions(), k, &value);
+        assert(status.ok() && value == k);
+    }
 
     std::cout<<"DB Stats"<<std::endl;
     std::string db_stats;
