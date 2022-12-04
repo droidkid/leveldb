@@ -23,7 +23,7 @@
 #define USE_LEARNED_MERGER 0
 
 #if USE_SHADOWED_LEARNED_MERGER  || USE_LEARNED_MERGER
-#include "table/learned_merger.h"
+#include "mod/learned_merger.h"
 #endif
 
 namespace leveldb {
