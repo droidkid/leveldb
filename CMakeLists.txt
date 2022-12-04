@@ -165,9 +165,6 @@ target_sources(leveldb
     "table/iterator.cc"
     "table/merger.cc"
     "table/merger.h"
-    "table/learned_merger.cc"
-    "table/learned_merger_shadowed.cc"
-    "table/learned_merger.h"
     "table/table_builder.cc"
     "table/table.cc"
     "table/two_level_iterator.cc"
@@ -196,6 +193,9 @@ target_sources(leveldb
     "mod/plr.cpp"
     "mod/zipf.h"
     "mod/zipf.cc"
+    "mod/learned_merger.cc"
+    "mod/learned_merger_shadowed.cc"
+    "mod/learned_merger.h"
 
 
   # Only CMake 3.3+ supports PUBLIC sources in targets exported by "install".
