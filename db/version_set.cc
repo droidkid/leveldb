@@ -18,9 +18,7 @@
 #include "table/two_level_iterator.h"
 #include "util/coding.h"
 #include "util/logging.h"
-
-#define USE_SHADOWED_LEARNED_MERGER 1
-#define USE_LEARNED_MERGER 0
+#include "mod/config.h"
 
 #if USE_SHADOWED_LEARNED_MERGER  || USE_LEARNED_MERGER
 #include "mod/learned_merger.h"

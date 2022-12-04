@@ -196,6 +196,7 @@ target_sources(leveldb
     "mod/learned_merger.cc"
     "mod/learned_merger_shadowed.cc"
     "mod/learned_merger.h"
+    "mod/config.h"
 
 
   # Only CMake 3.3+ supports PUBLIC sources in targets exported by "install".

@@ -7,6 +7,7 @@
 #include "table/iterator_wrapper.h"
 #include "mod/learned_merger.h"
 #include "mod/plr.h"
+#include "mod/config.h"
 
 #include <iostream>
 #include <cmath>
@@ -29,6 +30,8 @@ class LearnedMergingIterator : public Iterator {
         current_(nullptr) {
     for (int i = 0; i < n; i++) {
       children_[i].Set(children[i]);
+
+      // TODO: Write out line_segments and data to a file.
       keys_data_.push_back(std::vector<std::string>());
       keys_consumed_.push_back(0);
       children_[i].SeekToFirst();
@@ -37,12 +40,9 @@ class LearnedMergingIterator : public Iterator {
         children_[i].Next();
       }
       children_[i].SeekToFirst();
-      PLR plr = PLR(1);   //error=10
+      PLR plr = PLR(PLR_ERROR);
       std::vector<Segment> segs = plr.train(keys_data_[i]);
       keys_segments_.push_back(segs);
-      for (auto& str : keys_segments_[i]) {
-        // std::cout<<str.x<<" "<<str.k<<" "<<str.b<<"\n";
-      }
     }
   }
   
@@ -112,31 +112,24 @@ class LearnedMergingIterator : public Iterator {
 
  private:
   void FindSmallest();
-  bool GuessPosition(IteratorWrapper* iter, const Slice& guess_key,
-                     const Comparator& comparator, std::string& limit);
   uint64_t GuessPositionFromPLR(
     const std::string target_key,
     const int iterator_index);
-  uint64_t SliceToInteger(const Slice& slice);
 
   // We might want to use a heap in case there are lots of children.
   // For now we use a simple array since we expect a very small number
   // of children in leveldb.
   const Comparator* comparator_;
   IteratorWrapper* children_;
+  int n_;
   std::vector<std::vector<std::string>> keys_data_;
   std::vector<std::vector<Segment>> keys_segments_;
   std::vector<uint64_t> keys_consumed_;
-  int n_;
   uint64_t comparison_count_;
   uint64_t cdf_error_count_;
   IteratorWrapper* current_;
   int current_iterator_index_;
   uint64_t current_key_limit_index_;
-  // State variables to keep track of current segment.
-  std::string limit_;
-  bool is_last_segment_;
-
 };
 
 
@@ -148,6 +141,7 @@ uint64_t LearnedMergingIterator::GuessPositionFromPLR(
   std::string min_key = keys_data_[iterator_index].front();
   std::string max_key = keys_data_[iterator_index].back();
   uint64_t size = keys_data_[iterator_index].size();
+
   // check if the key is within the model bounds
   if (comparator_->Compare(target_key, max_key) > 0) return size;
   if (comparator_->Compare(target_key, min_key) < 0) return 0;
@@ -165,33 +159,9 @@ uint64_t LearnedMergingIterator::GuessPositionFromPLR(
       left = mid;
   }
 
-  // calculate the interval according to the selected key segment
   double result =
       target_int * segments[left].k + segments[left].b;
   return floor(result);
-}
-
-bool LearnedMergingIterator::GuessPosition(IteratorWrapper* iter,
-                                           const Slice& guess_key,
-                                           const Comparator& comparator,
-                                           std::string& limit) {
-  std::string start_key(iter->key().ToString());
-  iter->Seek(guess_key);
-  while (iter->Valid() &&
-         comparator.Compare(iter->key(), Slice(guess_key)) == 0) {
-    iter->Next();
-  }
-
-  if (iter->Valid()) {
-    limit.clear();
-    limit.append(iter->key().ToString());
-    iter->Seek(Slice(start_key));
-    return true;
-  } else {
-    iter->Seek(Slice(start_key));
-    assert(comparator.Compare(iter->key(), Slice(start_key)) == 0);
-    return false;
-  }
 }
 
 void LearnedMergingIterator::FindSmallest() {
@@ -199,22 +169,11 @@ void LearnedMergingIterator::FindSmallest() {
   IteratorWrapper* smallest = nullptr;
   IteratorWrapper* second_smallest = nullptr;
 
-#if 0
-  if (current_ != nullptr &&
-      (current_->Valid()) &&
-      (is_last_segment_ || comparator_->Compare(current_->key(), Slice(limit_)) < 0)) {
-        return;
-  }
-#endif
   if (current_ != nullptr &&
       (current_->Valid()) &&
       (keys_consumed_[current_iterator_index_] < current_key_limit_index_)) {
         return;
   }
-
-  // Done with the current segment,
-  // Now to find the next distinct range.
-  is_last_segment_ = false;
 
   for (int i = 0; i < n_; i++) {
     IteratorWrapper* child = &children_[i];
@@ -240,38 +199,26 @@ void LearnedMergingIterator::FindSmallest() {
   current_iterator_index_ = smallest_iterator_index;
 
   if (smallest == nullptr) {
-    return;  // no more ranges - not valid
+    return;
   }
 
-  // TODO: Find second_smallest()->key position in smallest using MLModel.Guess
   if (second_smallest == nullptr) {
-    is_last_segment_ = true;
     current_key_limit_index_ = keys_data_[smallest_iterator_index].size();
     return;
   }
-  //std::cout<<"Starting to find smallest"<<"\n";
-  // TODO: Guard these with pound signs
-#if 0
-  bool hasStrictlyGreaterKey =
-      GuessPosition(smallest, second_smallest->key(), *comparator_, limit_);
-  is_last_segment_ = !hasStrictlyGreaterKey;
-#endif
+
   std::string target_key = second_smallest->key().ToString();
   uint64_t approx_pos = GuessPositionFromPLR(target_key, smallest_iterator_index);
 
-  // TODO: We have to correct error for approx_pos to be first key greater than target_int
-  //std::cout<<approx_pos<<"\n";
-
-  // smallest->cur_pos -> where smallest is set now
-  // current_key_limit_index_ = position of approx_pos corrected.
+  // Correcting error for approx_pos to be first key greater than target_int
   if (approx_pos < 0){
       approx_pos = 0;
   }
   if (approx_pos >= keys_data_[smallest_iterator_index].size()){
-      cdf_error_count_++;
       approx_pos = keys_data_[smallest_iterator_index].size()-1;
   }
 
+  // Move approx_pos to be at first value lesser than or equal to target.
   while(approx_pos >= 0 && 
     comparator_->Compare(
         Slice(keys_data_[smallest_iterator_index][approx_pos]), 
@@ -281,14 +228,15 @@ void LearnedMergingIterator::FindSmallest() {
       approx_pos--;
   }
 
+  // Move approx_pos to be at first value greater than target.
   while(approx_pos < keys_data_[smallest_iterator_index].size() && 
    comparator_->Compare(
     Slice(keys_data_[smallest_iterator_index][approx_pos]), Slice(target_key)) < 0){
       cdf_error_count_++;
       approx_pos++;
   }
+
   current_key_limit_index_ = approx_pos;
-  // now keep smallest for (dst_pos - cur_pos) range.
 }
 }  // namespace
 
