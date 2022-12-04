@@ -29,6 +29,7 @@ class LearnedMergingIterator : public Iterator {
     stats_.num_items = 0;
     stats_.cdf_abs_error = 0;
     stats_.comp_count = 0;
+    stats_.num_iterators = n_;
 
     for (int i = 0; i < n; i++) {
       children_[i].Set(children[i]);

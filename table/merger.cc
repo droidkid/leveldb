@@ -25,6 +25,7 @@ class MergingIterator : public Iterator {
     stats_.num_items = 0;
     stats_.cdf_abs_error = 0;
     stats_.comp_count = 0;
+    stats_.num_iterators = n_;
   }
 
   ~MergingIterator() override { delete[] children_; }

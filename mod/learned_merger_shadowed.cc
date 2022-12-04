@@ -60,13 +60,15 @@ class LearnedMergingWithShadowIterator : public Iterator {
     MergerStats lm = learnedMergingIterator_->get_merger_stats();
     MergerStats m = mergingIterator_->get_merger_stats();
     assert(m.num_items == lm.num_items);
+    assert(m.num_iterators == lm.num_iterators);
 
     std::ofstream stats;
     stats.open("stats.csv", std::ofstream::app);
     stats << lm.num_items<<",";
     stats << m.comp_count<<",";
     stats << lm.comp_count<<",";
-    stats << lm.cdf_abs_error<<"\n";
+    stats << lm.cdf_abs_error<<",";
+    stats << lm.num_iterators<<"\n";
     stats.close();
 
     return m;

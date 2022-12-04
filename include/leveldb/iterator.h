@@ -25,6 +25,7 @@ struct MergerStats {
     uint64_t num_items;
     uint64_t cdf_abs_error;
     uint64_t comp_count;
+    uint64_t num_iterators;
 };
 
 class LEVELDB_EXPORT Iterator {

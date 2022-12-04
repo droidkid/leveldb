@@ -12,7 +12,6 @@ using namespace std;
 #define BENCH_ZIPF_KEYS 1
 
 const std::string DB_NAME = "./DB";
-const std::string VALUE = "vaajiosdjfskldjfsdlkjfsdlkjfsdlkfjsd";
 
 string generate_key(uint64_t key_value) {
     string key = to_string(key_value);
@@ -45,7 +44,8 @@ int main(int argc, char **argv) {
         stats << "NUM_ITEMS" <<",";
         stats << "COMP_COUNT" <<",";
         stats << "LEARNED_COMP_COUNT" <<",";
-        stats << "CDF_ABS_ERROR" <<",\n";
+        stats << "CDF_ABS_ERROR" <<",";
+        stats << "NUM_ITERATORS" <<"\n";
         stats.close();
     #endif
 
