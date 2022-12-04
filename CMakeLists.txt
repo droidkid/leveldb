@@ -194,6 +194,8 @@ target_sources(leveldb
     "util/status.cc"
     "mod/plr.h"
     "mod/plr.cpp"
+    "mod/zipf.h"
+    "mod/zipf.cc"
 
 
   # Only CMake 3.3+ supports PUBLIC sources in targets exported by "install".

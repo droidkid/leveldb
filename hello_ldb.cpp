@@ -2,7 +2,7 @@
 #include <cassert>
 
 #include "leveldb/db.h"
-
+#include "mod/zipf.h"
 using namespace std;
 
 #define NUM_KEYS 5000000
@@ -27,13 +27,27 @@ int main() {
     status = leveldb::DB::Open(options, DB_NAME, &db);
     assert(status.ok());
 
+    //uint64_t *elems = new uint64_t[100000];
+    //create_zipfian();
+    ZIPFIAN z = create_zipfian(1.5, 10000000, random);
+    long g = zipfian_gen(z);
 
-    for (int i=0; i < NUM_KEYS; i++) {
-        string key = generate_key(to_string(rand() % NUM_KEYS));
+
+    //generate_random_keys(elems, 1000000, 100000, 1.5);
+
+    for(int i=0; i< 5000000; i++){
+        long g = zipfian_gen(z);
+        string key = generate_key(to_string(g));
         string *value = new string(VALUE);
         db->Put(leveldb::WriteOptions(), key, *value);
-        delete value;
+        delete value;  
     }
+    // for (int i=0; i < NUM_KEYS; i++) {
+    //     string key = generate_key(to_string(rand() % NUM_KEYS));
+    //     string *value = new string(VALUE);
+    //     db->Put(leveldb::WriteOptions(), key, *value);
+    //     delete value;
+    // }
 
     std::cout<<"DB Stats"<<std::endl;
     std::string stats;
