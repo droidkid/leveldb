@@ -4,9 +4,9 @@
 
 #include "leveldb/comparator.h"
 #include "leveldb/iterator.h"
-
-#include "table/learned_merger.h"
 #include "table/merger.h"
+#include "mod/learned_merger.h"
+
 #include <iostream>
 
 namespace leveldb {
