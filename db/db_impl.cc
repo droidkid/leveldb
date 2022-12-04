@@ -1012,7 +1012,7 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
 
     input->Next();
   }
-
+  input->print_stats();
   if (status.ok() && shutting_down_.load(std::memory_order_acquire)) {
     status = Status::IOError("Deleting DB during compaction");
   }

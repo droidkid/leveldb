@@ -49,16 +49,6 @@ class LearnedMergingIterator : public Iterator {
   ~LearnedMergingIterator() override { delete[] children_; }
 
   bool Valid() const override { 
-    if(current_ == nullptr) {
-      uint64_t total_item_number=0;
-      for (int i = 0; i < n_; i++){
-        total_item_number += keys_data_[i].size();
-      }
-      std::cout<<"Compaction size : "<<total_item_number<<" ";
-      std::cout<<"Number of iterators :"<<n_<<" ";
-      std::cout<<"Comparison count : "<<comparison_count_<<" ";
-      std::cout<<"CDF Error count : "<<cdf_error_count_<<"\n";
-    }
     return (current_ != nullptr); 
   }
 
@@ -108,6 +98,16 @@ class LearnedMergingIterator : public Iterator {
       }
     }
     return status;
+  }
+
+  void print_stats() const override {
+    uint64_t total_item_number=0;
+    for (int i = 0; i < n_; i++){
+      total_item_number += keys_data_[i].size();
+    }
+    std::cout<<total_item_number<<",";
+    std::cout<<comparison_count_<<",";
+    std::cout<<cdf_error_count_<<",";
   }
 
  private:

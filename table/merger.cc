@@ -29,12 +29,8 @@ class MergingIterator : public Iterator {
   ~MergingIterator() override { delete[] children_; }
 
   bool Valid() const override { 
-    if(current_ == nullptr) {
-      std::cout<<"Number of iterators :"<<n_<<" ";
-      std::cout<<"Comparison count : "<<comparison_count_<<"\n";
-    }
     return (current_ != nullptr); 
-    }
+  }
 
   void SeekToFirst() override {
     for (int i = 0; i < n_; i++) {
@@ -134,6 +130,11 @@ class MergingIterator : public Iterator {
       }
     }
     return status;
+  }
+
+  void print_stats() const override {
+    std::cout<<comparison_count_<<",";
+    std::cout<<n_<<",";
   }
 
  private:

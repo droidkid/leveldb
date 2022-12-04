@@ -55,6 +55,13 @@ class LearnedMergingWithShadowIterator : public Iterator {
     assert(false);  // Not supported
   }
 
+  void print_stats() const override {
+    // number of items, learned_comparisions, cdf_error, standard_comparisions, num_iterators
+    learnedMergingIterator_->print_stats();
+    mergingIterator_->print_stats();
+    std::cout<<std::endl;
+  }
+
   Slice key() const override {
     if(mergingIterator_->key().compare(learnedMergingIterator_->key()) !=
            0) {

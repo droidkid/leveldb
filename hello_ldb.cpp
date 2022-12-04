@@ -10,10 +10,11 @@ const std::string DB_NAME = "./DB";
 const std::string VALUE = "vaaddd                                                                                dcdwcwcwcewcwecwecwecwecewcewcewdewdwcwecwecwecwecwecwecwecwecwecwecwecfevcggggggggglue::value::value::dljiosdjfskldjfsdlkjfsdlkjfsdlkfjsd";
 
 string generate_key(const string& key) {
-        int key_size=10;
-        string result = string(key_size - key.length(), '0') + key;
-        return std::move(result);
-    }
+    int key_size=10;
+    string result = string(key_size - key.length(), '0') + key;
+    return std::move(result);
+}
+
 int main() {
     // Destroy the DB and create it again. 
     // We want to start from scratch.
