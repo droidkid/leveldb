@@ -523,5 +523,5 @@ if(LEVELDB_INSTALL)
   )
 endif(LEVELDB_INSTALL)
 
-add_executable(HelloLdb hello_ldb.cpp)
-target_link_libraries(HelloLdb PRIVATE leveldb)
+add_executable(BenchmarkLM benchmark.cpp)
+target_link_libraries(BenchmarkLM PRIVATE leveldb)
