@@ -189,6 +189,15 @@ target_sources(leveldb
     "util/options.cc"
     "util/random.h"
     "util/status.cc"
+    "mod/plr.h"
+    "mod/plr.cpp"
+    "mod/zipf.h"
+    "mod/zipf.cc"
+    "mod/learned_merger.cc"
+    "mod/learned_merger_shadowed.cc"
+    "mod/learned_merger.h"
+    "mod/config.h"
+
 
   # Only CMake 3.3+ supports PUBLIC sources in targets exported by "install".
   $<$<VERSION_GREATER:CMAKE_VERSION,3.2>:PUBLIC>
@@ -513,3 +522,6 @@ if(LEVELDB_INSTALL)
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
   )
 endif(LEVELDB_INSTALL)
+
+add_executable(BenchmarkLM benchmark.cpp)
+target_link_libraries(BenchmarkLM PRIVATE leveldb)

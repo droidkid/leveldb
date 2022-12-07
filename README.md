@@ -1,4 +1,46 @@
+### CS 6530 Final Project
+
+The goal of the project is to use learned_indexes to speed up compaction by reducing the number of comparisions when merging sstables.
+
+### Running the benchmark
+
+```bash
+# Fetch submodules
+$ git submodule update --init
+
+# build and run benchmarks
+$ ./run_benchmarks.sh
+
+# Use jupyter notebook to open plot_benchmark.ipynb and see results.
+# Make sure LOG_METRICS is set to 1 in mod/config.h
+$ jupyter notebook
+```
+
+### Reading the benchmark plot
+
+The plots are grouped by number of files being compacted.
+
+The x axis refers to the xth compaction.
+
+COMP_COUNT is the number of comparisions made in the standard merger.
+
+LEARNED_COMP_COUNT refers to comparisions made in the learned_merger
+
+CDF_ABS_ERROR refers to the comparisions made to correct for the error in the CDF.
+
+
+### Caveats
+- Currently, the project only counts the number of comparisons. Benchmarking the runtime and memory usage is a TODO. Currently to train the model we do a scan and store all keys in memory. 
+- Only integer keys are supported. These are stored as fixed length strings.
+
 LevelDB is a fast key-value storage library written at Google that provides an ordered mapping from string keys to string values.
+
+### Implementation details
+
+Most of our code is in the mod/ directory.
+TODO: Explain.
+
+# LEVELDB README
 
 > **This repository is receiving very limited maintenance. We will only review the following types of changes.**
 >

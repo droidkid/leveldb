@@ -22,11 +22,17 @@ class MergingIterator : public Iterator {
     for (int i = 0; i < n; i++) {
       children_[i].Set(children[i]);
     }
+    stats_.num_items = 0;
+    stats_.cdf_abs_error = 0;
+    stats_.comp_count = 0;
+    stats_.num_iterators = n_;
   }
 
   ~MergingIterator() override { delete[] children_; }
 
-  bool Valid() const override { return (current_ != nullptr); }
+  bool Valid() const override { 
+    return (current_ != nullptr); 
+  }
 
   void SeekToFirst() override {
     for (int i = 0; i < n_; i++) {
@@ -75,6 +81,7 @@ class MergingIterator : public Iterator {
     }
 
     current_->Next();
+    stats_.num_items++;
     FindSmallest();
   }
 
@@ -128,6 +135,10 @@ class MergingIterator : public Iterator {
     return status;
   }
 
+  MergerStats get_merger_stats() override {
+    return stats_;
+  }
+
  private:
   // Which direction is the iterator moving?
   enum Direction { kForward, kReverse };
@@ -143,6 +154,7 @@ class MergingIterator : public Iterator {
   int n_;
   IteratorWrapper* current_;
   Direction direction_;
+  MergerStats stats_;
 };
 
 void MergingIterator::FindSmallest() {
@@ -155,6 +167,7 @@ void MergingIterator::FindSmallest() {
       } else if (comparator_->Compare(child->key(), smallest->key()) < 0) {
         smallest = child;
       }
+      stats_.comp_count++;
     }
   }
   current_ = smallest;

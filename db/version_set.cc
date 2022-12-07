@@ -18,6 +18,11 @@
 #include "table/two_level_iterator.h"
 #include "util/coding.h"
 #include "util/logging.h"
+#include "mod/config.h"
+
+#if USE_SHADOWED_LEARNED_MERGER  || USE_LEARNED_MERGER
+#include "mod/learned_merger.h"
+#endif
 
 namespace leveldb {
 
@@ -1226,6 +1231,12 @@ Iterator* VersionSet::MakeInputIterator(Compaction* c) {
   // TODO(opt): use concatenating iterator for level-0 if there is no overlap
   const int space = (c->level() == 0 ? c->inputs_[0].size() + 1 : 2);
   Iterator** list = new Iterator*[space];
+
+  #ifdef USE_SHADOWED_LEARNED_MERGER
+  int shadow_num = 0;
+  Iterator** shadow_list = new Iterator*[space];
+  #endif
+
   int num = 0;
   for (int which = 0; which < 2; which++) {
     if (!c->inputs_[which].empty()) {
@@ -1234,17 +1245,34 @@ Iterator* VersionSet::MakeInputIterator(Compaction* c) {
         for (size_t i = 0; i < files.size(); i++) {
           list[num++] = table_cache_->NewIterator(options, files[i]->number,
                                                   files[i]->file_size);
+          #if USE_SHADOWED_LEARNED_MERGER
+          shadow_list[shadow_num++] = table_cache_->NewIterator(options, 
+                                            files[i]->number, files[i]->file_size);
+          #endif
         }
       } else {
         // Create concatenating iterator for the files from this level
         list[num++] = NewTwoLevelIterator(
             new Version::LevelFileNumIterator(icmp_, &c->inputs_[which]),
             &GetFileIterator, table_cache_, options);
+        #if USE_SHADOWED_LEARNED_MERGER
+        shadow_list[shadow_num++] = NewTwoLevelIterator(
+            new Version::LevelFileNumIterator(icmp_, &c->inputs_[which]),
+            &GetFileIterator, table_cache_, options);
+        #endif
+
       }
     }
   }
   assert(num <= space);
+  #if USE_SHADOWED_LEARNED_MERGER
+  Iterator* result = NewShadowedLearnedMergingIterator(&icmp_, list, shadow_list, num);
+  #elif  USE_LEARNED_MERGER
+  Iterator* result = NewLearnedMergingIterator(&icmp_, list, num);
+  #else
   Iterator* result = NewMergingIterator(&icmp_, list, num);
+  #endif
+
   delete[] list;
   return result;
 }

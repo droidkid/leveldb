@@ -34,6 +34,7 @@
 #include "util/coding.h"
 #include "util/logging.h"
 #include "util/mutexlock.h"
+#include "mod/config.h"
 
 namespace leveldb {
 
@@ -1012,7 +1013,10 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
 
     input->Next();
   }
-
+  #if LOG_METRICS
+  // Has side effect of writing to file if it is a shadowed merging iterator.
+  input->get_merger_stats();
+  #endif
   if (status.ok() && shutting_down_.load(std::memory_order_acquire)) {
     status = Status::IOError("Deleting DB during compaction");
   }

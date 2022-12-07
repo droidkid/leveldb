@@ -1924,7 +1924,10 @@ TEST_F(DBTest, BloomFilter) {
   int reads = env_->random_read_counter_.Read();
   std::fprintf(stderr, "%d present => %d reads\n", N, reads);
   ASSERT_GE(reads, N);
-  ASSERT_LE(reads, N + 2 * N / 100);
+  // TODO: Learned mergers do extra reads for ... training.
+  // Current implementation of 'learned' merger is just a linear scan
+  // Soon we'll try out some ML modelling, but we'll still do some extra reads.
+  ASSERT_LE(reads, 2 * N + 2 * N / 100);
 
   // Lookup present keys.  Should rarely read from either sstable.
   env_->random_read_counter_.Reset();
