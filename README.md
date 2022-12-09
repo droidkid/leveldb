@@ -9,10 +9,11 @@ The goal of the project is to use learned_indexes to speed up compaction by redu
 $ git submodule update --init
 
 # build and run benchmarks
+# Runs 2 tests - insert 5M keys in random distribution, zipf distribution
 $ ./run_benchmarks.sh
 
-# Use jupyter notebook to open plot_benchmark.ipynb and see results.
-# Make sure LOG_METRICS is set to 1 in mod/config.h
+# Use jupyter notebook to open and run plot_benchmark.ipynb to see results.
+# Make sure LOG_METRICS is set to 1 in mod/config.h (It is by default)
 $ jupyter notebook
 ```
 
@@ -37,8 +38,14 @@ LevelDB is a fast key-value storage library written at Google that provides an o
 
 ### Implementation details
 
-Most of our code is in the mod/ directory.
-TODO: Explain.
+Most of our changes are in the mod/ directory. Important files include:
+
+- python_prototype.ipynb - Python prototype Colab 
+- run_benchmark.sh - Script that runs benchmark
+- mod/learned_merger.cc:  Iterator which has the algorithm proposed above
+- mod/learned_shadow_merger: Iterator which compares outputs from reference iterator and our iterator
+- mod/config.h: Preprocessor variables to control flags
+
 
 # LEVELDB README
 
