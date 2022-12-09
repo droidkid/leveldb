@@ -14,6 +14,7 @@ $ ./run_benchmarks.sh
 
 # Use jupyter notebook to open and run plot_benchmark.ipynb to see results.
 # Make sure LOG_METRICS is set to 1 in mod/config.h (It is by default)
+# Make sure to pip install matplotlib pandas
 $ jupyter notebook
 ```
 
