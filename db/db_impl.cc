@@ -908,6 +908,9 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
     compact->smallest_snapshot = snapshots_.oldest()->sequence_number();
   }
 
+  // TODO(3): Use existing models:
+  // If the files being compacted have PLR models, use those to construct
+  // the next iterator.
   Iterator* input = versions_->MakeInputIterator(compact->compaction);
 
   // Release mutex while we're actually doing the compaction work
@@ -919,6 +922,10 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
   std::string current_user_key;
   bool has_current_user_key = false;
   SequenceNumber last_sequence_for_key = kMaxSequenceNumber;
+
+  // TODO 1: PlrBuilder plrBuilder;
+  // TODO 5: Make decision on when to build... 
+
   while (input->Valid() && !shutting_down_.load(std::memory_order_acquire)) {
     // Prioritize immutable compaction work
     if (has_imm_.load(std::memory_order_relaxed)) {
@@ -1011,8 +1018,17 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
       }
     }
 
+    // If L0 to L1:
+    // plrBuilder.process(input->key());
+    // TODO 4: Else, use the existing models to construct the new model..
+
     input->Next();
   }
+
+  // PlrModel plrModel = plrBuilder.finishTraining();
+  // Model trained!
+  // TODO 2: Now attach model to new file from compaction.
+
   #if LOG_METRICS
   // Has side effect of writing to file if it is a shadowed merging iterator.
   input->get_merger_stats();
